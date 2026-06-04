@@ -44,6 +44,11 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#1e293b',
     color: '#f1f5f9',
     gap: 32,
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
   },
   brand: {
     fontSize: 22,

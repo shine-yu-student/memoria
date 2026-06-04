@@ -30,6 +30,7 @@ const styles: Record<string, React.CSSProperties> = {
   app: {
     minHeight: '100vh',
     backgroundColor: '#f8fafc',
+    paddingTop: 56,
   },
   main: {
     paddingTop: 8,

@@ -12,6 +12,7 @@ interface Props {
 export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
   const [mode, setMode] = useState<'menu' | 'full' | 'partial-menu' | 'partial-random' | 'partial-custom' | 'result'>('menu');
   const [blanks, setBlanks] = useState<BlankItem[]>([]);
+  const [blankIndices, setBlankIndices] = useState<number[]>([]);
   const [customSelected, setCustomSelected] = useState<Set<number>>(new Set());
   const [userInputs, setUserInputs] = useState<Record<string, string>>({});
 
@@ -43,6 +44,7 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
       correctFlag: false,
     }));
     setBlanks(items);
+    setBlankIndices(indices);
     setUserInputs(Object.fromEntries(items.map(i => [i.id, ''])));
     setMode('partial-random');
   };
@@ -62,6 +64,7 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
       correctFlag: false,
     }));
     setBlanks(items);
+    setBlankIndices(indices);
     setUserInputs(Object.fromEntries(items.map(i => [i.id, ''])));
     setMode('partial-custom');
   };
@@ -182,35 +185,37 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
         )}
 
         {(mode === 'partial-random' || mode === 'partial-custom') && (
-          <div>
-            <p style={{ color: '#64748b', marginBottom: 16 }}>
-              请在以下输入框中填写正确的句子内容。原文中其他句子已显示供参考。
+          <div style={styles.articleScrollContainer}>
+            <p style={{ color: '#64748b', marginBottom: 12, fontSize: 14 }}>
+              全文显示如下，被选中的句子已被替换为输入框。
             </p>
-            {sentences.map((s, idx) => {
-              const blankItem = blanks.find(b => b.correct === s);
-              if (blankItem) {
+            <div style={styles.articleContent}>
+              {sentences.map((s, idx) => {
+                const blankIdx = blankIndices.indexOf(idx);
+                const blankItem = blankIdx !== -1 ? blanks[blankIdx] : undefined;
+                const isLast = idx === sentences.length - 1;
                 return (
-                  <div key={idx} style={styles.sentenceBlock}>
-                    <div style={styles.sentenceLabel2}>
-                      <strong>#{idx + 1}</strong>（填空）
-                    </div>
-                    <textarea
-                      style={styles.sentenceInput}
-                      rows={2}
-                      placeholder="在此输入……"
-                      value={userInputs[blankItem.id] || ''}
-                      onChange={e => setUserInputs({ ...userInputs, [blankItem.id]: e.target.value })}
-                    />
-                  </div>
+                  <span key={idx} style={styles.articleSegment}>
+                    {blankItem ? (
+                      <span style={styles.blankWrapper}>
+                        <textarea
+                          style={styles.articleBlankInput}
+                          rows={1}
+                          placeholder="在此输入……"
+                          value={userInputs[blankItem.id] || ''}
+                          onChange={e => setUserInputs({ ...userInputs, [blankItem.id]: e.target.value })}
+                        />
+                        {!isLast && <span style={styles.articlePunct}>，</span>}
+                      </span>
+                    ) : (
+                      <span style={styles.articleText}>
+                        {s}{!isLast && <span style={styles.articlePunct}>,</span>}
+                      </span>
+                    )}
+                  </span>
                 );
-              }
-              return (
-                <div key={idx} style={styles.sentenceBlock}>
-                  <div style={styles.sentenceLabel2}><strong>#{idx + 1}</strong></div>
-                  <div style={styles.sentenceHint}>{s}</div>
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
         )}
 
@@ -304,33 +309,49 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.8,
     boxSizing: 'border-box',
   },
-  sentenceBlock: {
-    marginBottom: 14,
-    padding: '12px',
+  /* 文章区域（部分记忆） */
+  articleScrollContainer: {
     backgroundColor: '#ffffff',
-    borderRadius: 8,
+    borderRadius: 12,
+    padding: '20px 24px',
     border: '1px solid #e2e8f0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    maxHeight: 'calc(100vh - 280px)',
+    overflowY: 'auto',
+    lineHeight: 2,
   },
-  sentenceLabel2: {
-    fontSize: 13,
-    color: '#64748b',
-    marginBottom: 6,
+  articleContent: {
+    display: 'inline',
   },
-  sentenceHint: {
+  articleSegment: {
+    display: 'inline',
+  },
+  articleText: {
+    fontSize: 16,
     color: '#1e293b',
-    lineHeight: 1.7,
-    fontSize: 15,
+    lineHeight: 2,
   },
-  sentenceInput: {
-    width: '100%',
-    padding: '8px 12px',
-    border: '1px solid #cbd5e1',
+  articlePunct: {
+    fontSize: 16,
+    color: '#94a3b8',
+    marginRight: 2,
+  },
+  blankWrapper: {
+    display: 'inline-block',
+    verticalAlign: 'middle',
+  },
+  articleBlankInput: {
+    display: 'inline-block',
+    width: 180,
+    padding: '4px 10px',
+    border: '2px dashed #059669',
     borderRadius: 6,
     fontSize: 15,
-    resize: 'vertical',
     fontFamily: 'inherit',
     lineHeight: 1.6,
-    boxSizing: 'border-box',
+    backgroundColor: '#f0fdf4',
+    verticalAlign: 'middle',
+    outline: 'none',
   },
   submitBtn: {
     padding: '10px 32px',
