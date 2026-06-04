@@ -295,21 +295,23 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
   return (
     <div style={styles.page}>
       <div style={styles.stickyHeader}>
-        <div style={styles.headerCard}>
-          <div style={styles.topBar}>
-            <button style={styles.backBtn} onClick={onBack}>← 返回</button>
-            <h1 style={styles.bookTitle}>{book.title}</h1>
-            <span style={styles.badge}>{isWordBook ? '📗 词书' : '📘 句书'}</span>
-          </div>
-          <div style={styles.actionBar}>
-            <button style={styles.primaryBtn} onClick={() => { setNewEn(''); setNewZh(''); setAddModalOpen(true); }}>
-              ＋ 添加{entryLabel}
-            </button>
-            <button style={styles.outlineBtn} onClick={handleExport}>⬇️ 导出</button>
-            <button style={styles.outlineBtn} onClick={openRename}>✏️ 重命名</button>
-            <button style={styles.ocrBtn} onClick={openOcrUpload}>📷 从图片导入</button>
-            <button style={styles.jsonBtn} onClick={openJsonImport}>📋 从 JSON 导入</button>
-            <button style={styles.dangerBtn} onClick={handleDeleteBook}>🗑️ 删除</button>
+        <div style={styles.opaqueRegion}>
+          <div style={styles.headerCard}>
+            <div style={styles.topBar}>
+              <button style={styles.backBtn} onClick={onBack}>← 返回</button>
+              <h1 style={styles.bookTitle}>{book.title}</h1>
+              <span style={styles.badge}>{isWordBook ? '📗 词书' : '📘 句书'}</span>
+            </div>
+            <div style={styles.actionBar}>
+              <button style={styles.primaryBtn} onClick={() => { setNewEn(''); setNewZh(''); setAddModalOpen(true); }}>
+                ＋ 添加{entryLabel}
+              </button>
+              <button style={styles.outlineBtn} onClick={handleExport}>⬇️ 导出</button>
+              <button style={styles.outlineBtn} onClick={openRename}>✏️ 重命名</button>
+              <button style={styles.ocrBtn} onClick={openOcrUpload}>📷 从图片导入</button>
+              <button style={styles.jsonBtn} onClick={openJsonImport}>📋 从 JSON 导入</button>
+              <button style={styles.dangerBtn} onClick={handleDeleteBook}>🗑️ 删除</button>
+            </div>
           </div>
         </div>
         <div style={styles.headerFade} />
@@ -521,18 +523,22 @@ const styles: Record<string, React.CSSProperties> = {
   /* 粘性顶部 */
   stickyHeader: {
     position: 'sticky', top: 0, zIndex: 10,
-    paddingTop: 12,
+  },
+  opaqueRegion: {
+    background: '#f8fafc',
+    padding: '12px 0 32px 0',
   },
   headerCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: '14px 18px',
     border: '1px solid #e2e8f0',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    boxShadow: '0 0 24px rgba(0,0,0,0.10), 0 0 8px rgba(0,0,0,0.04)',
   },
   headerFade: {
-    height: 24,
-    background: 'linear-gradient(to bottom, #ffffff, rgba(248,250,252,0))',
+    height: 48,
+    marginTop: -24,
+    background: 'linear-gradient(to bottom, #f8fafc, rgba(248,250,252,0))',
   },
   /* 顶部栏 */
   topBar: {
