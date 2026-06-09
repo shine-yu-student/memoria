@@ -63,6 +63,7 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
   const retestRef = useRef<RetestItem[]>([]);
   const answeredCountRef = useRef(0);
   const allEntriesRef = useRef<FlashcardEntry[]>([]);
+  const wrongEntriesRef = useRef<FlashcardEntry[]>([]); // 记录每次错误
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 完成后的统计数据
@@ -132,17 +133,19 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
     const trimmed = input.trim();
 
     if (flashPhase === 'wrong-reveal') {
-      // 答错后的重新输入阶段 —— 用户必须输入正确答案才能继续
+      // 答错后的重新输入阶段
       if (trimmed.toLowerCase() === currentEntry.english.trim().toLowerCase()) {
         // 终于输对了 → 送入 retest 队列，3-5 个词后重测
         const retestAfter = answeredCountRef.current + 3 + Math.floor(Math.random() * 3);
         retestRef.current.push({ entry: currentEntry, dueAfter: retestAfter });
-        setProgress(p => ({ ...p, wrong: p.wrong + 1 }));
         setFlashPhase('showing');
         // 短暂显示提示后进入下一词
         nextWord();
+      } else {
+        // 仍然答错 → 记为一次新的错误
+        setProgress(p => ({ ...p, wrong: p.wrong + 1 }));
+        wrongEntriesRef.current.push(currentEntry);
       }
-      // 否则不做事，用户继续输入直到正确
       return;
     }
 
@@ -152,7 +155,9 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
       setProgress(p => ({ ...p, done: p.done + 1 }));
       nextWord();
     } else {
-      // 答错了 → 展示正确答案
+      // 答错了 → 记为错误并展示正确答案
+      setProgress(p => ({ ...p, wrong: p.wrong + 1 }));
+      wrongEntriesRef.current.push(currentEntry);
       setFlashPhase('wrong-reveal');
       setInput(''); // 清空输入框，让用户重新输入
       focusInput();
@@ -185,6 +190,7 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
     retestRef.current = [];
     answeredCountRef.current = 0;
     allEntriesRef.current = shuffled;
+    wrongEntriesRef.current = [];
     isRetestRef.current = false;
 
     setProgress({ done: 0, total: shuffled.length, wrong: 0 });
@@ -444,18 +450,32 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
           {progress.wrong > 0 && (
             <details style={styles.wrongDetails}>
               <summary style={styles.wrongSummary}>
-                查看曾答错的词（{progress.wrong} 个）
+                查看曾答错的词（{progress.wrong} 次错误）
               </summary>
               <div style={styles.wrongList}>
-                {allEntriesRef.current
-                  .filter(e => !queueRef.current.includes(e) && !retestRef.current.some(r => r.entry.id === e.id))
-                  .slice(0, 10)
-                  .map(e => (
-                    <div key={e.id} style={styles.wrongItem}>
-                      <span style={{ fontWeight: 600 }}>{e.english}</span>
-                      <span style={{ color: '#64748b' }}> — {e.chinese}</span>
+                {(() => {
+                  // 按单词去重并统计错误次数
+                  const countMap = new Map<string, { entry: FlashcardEntry; count: number }>();
+                  for (const e of wrongEntriesRef.current) {
+                    const key = e.id;
+                    if (countMap.has(key)) {
+                      countMap.get(key)!.count++;
+                    } else {
+                      countMap.set(key, { entry: e, count: 1 });
+                    }
+                  }
+                  return Array.from(countMap.values()).map(({ entry, count }) => (
+                    <div key={entry.id} style={styles.wrongItem}>
+                      <span style={{ fontWeight: 600 }}>{entry.english}</span>
+                      <span style={{ color: '#64748b' }}> — {entry.chinese}</span>
+                      {count > 1 && (
+                        <span style={{ color: '#dc2626', marginLeft: 8, fontSize: 13 }}>
+                          （错误 {count} 次）
+                        </span>
+                      )}
                     </div>
-                  ))}
+                  ));
+                })()}
               </div>
             </details>
           )}
@@ -606,7 +626,10 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer', color: '#dc2626', fontSize: 15,
     padding: 8, fontWeight: 600,
   },
-  wrongList: { marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 },
+  wrongList: {
+    marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4,
+    maxHeight: 300, overflowY: 'auto',
+  },
   wrongItem: { padding: '6px 12px', fontSize: 14, color: '#1e293b' },
   backToSelectBtn: {
     display: 'block', width: '100%', padding: '12px', fontSize: 16,

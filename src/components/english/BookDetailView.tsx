@@ -314,12 +314,12 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
             </div>
           </div>
         </div>
-        <div style={styles.headerFade} />
       </div>
 
-      {/* 条目列表 */}
-      <div style={styles.cardGrid}>
-        {entries.map(entry => (
+      {/* 条目列表容器 */}
+      <div style={styles.cardContainer}>
+        <div style={styles.cardGrid}>
+          {entries.map(entry => (
           <div key={entry.id} style={styles.entryCard}>
             <div style={styles.entryContent}>
               <div style={styles.entryEn}>{entry.english}</div>
@@ -335,8 +335,7 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
           <p style={styles.empty}>暂无{entryLabel}，点击上方"添加{entryLabel}"开始添加。</p>
         )}
       </div>
-
-      {/* ===== 添加弹窗 ===== */}
+      </div>
       <Modal open={addModalOpen} title={`添加${entryLabel}`} onClose={() => setAddModalOpen(false)}>
         <div style={styles.formGroup}>
           <label style={styles.label}>英文</label>
@@ -520,25 +519,20 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
 /* ==================== 样式 ==================== */
 
 const styles: Record<string, React.CSSProperties> = {
-  /* 粘性顶部 */
+  /* 顶部区域 */
   stickyHeader: {
-    position: 'sticky', top: 0, zIndex: 10,
+    flexShrink: 0,
   },
   opaqueRegion: {
     background: '#f8fafc',
-    padding: '12px 0 32px 0',
+    padding: '12px 0 8px 0',
   },
   headerCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: '14px 18px',
     border: '1px solid #e2e8f0',
-    boxShadow: '0 0 24px rgba(0,0,0,0.10), 0 0 8px rgba(0,0,0,0.04)',
-  },
-  headerFade: {
-    height: 48,
-    marginTop: -24,
-    background: 'linear-gradient(to bottom, #f8fafc, rgba(248,250,252,0))',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
   },
   /* 顶部栏 */
   topBar: {
@@ -558,7 +552,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   page: {
     maxWidth: 900, margin: '0 auto', padding: '16px',
-    height: 'calc(100vh - 56px)', overflowY: 'auto',
+    height: 'calc(100vh - 56px)',
+    display: 'flex', flexDirection: 'column',
   },
   primaryBtn: {
     padding: '10px 20px', fontSize: 15, fontWeight: 600,
@@ -579,6 +574,20 @@ const styles: Record<string, React.CSSProperties> = {
   jsonBtn: {
     padding: '10px 20px', fontSize: 15,
     backgroundColor: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', borderRadius: 8, cursor: 'pointer',
+  },
+
+  /* 卡片容器（略宽于标题，圆角矩形；填充剩余高度，内部滚动） */
+  cardContainer: {
+    marginLeft: -16,
+    marginRight: -16,
+    marginBottom: 16,
+    padding: '16px 16px 8px',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    flex: 1,
+    overflowY: 'auto',
   },
 
   /* 卡片网格 */
