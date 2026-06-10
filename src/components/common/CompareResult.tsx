@@ -10,21 +10,15 @@ interface CompareResultProps {
 export const CompareResult: React.FC<CompareResultProps> = ({ blanks, onBack }) => {
   const correctCount = blanks.filter(b => b.correctFlag).length;
   const total = blanks.length;
-  const score = total > 0 ? Math.round((correctCount / total) * 100) : 0;
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>📊 记忆结果</h2>
-
-      <div style={styles.scoreBoard}>
-        <span style={styles.scoreLabel}>得分</span>
-        <span style={{ ...styles.scoreValue, color: score >= 80 ? '#16a34a' : score >= 50 ? '#ea580c' : '#dc2626' }}>
-          {score}
+      <h2 style={styles.title}>
+        📊 记忆结果
+        <span style={styles.summaryTag}>
+          {correctCount}/{total} 正确
         </span>
-        <span style={styles.scoreDetail}>
-          （{correctCount}/{total} 正确）
-        </span>
-      </div>
+      </h2>
 
       <div style={styles.list}>
         {blanks.map((blank, idx) => (
@@ -66,28 +60,18 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     marginBottom: 20,
     color: '#1e293b',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
   },
-  scoreBoard: {
-    textAlign: 'center',
-    padding: '20px',
-    backgroundColor: '#f8fafc',
+  summaryTag: {
+    fontSize: 16,
+    fontWeight: 600,
+    color: '#64748b',
+    backgroundColor: '#f1f5f9',
+    padding: '4px 14px',
     borderRadius: 12,
-    marginBottom: 24,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-  },
-  scoreLabel: {
-    fontSize: 14,
-    color: '#64748b',
-    marginRight: 8,
-  },
-  scoreValue: {
-    fontSize: 48,
-    fontWeight: 700,
-  },
-  scoreDetail: {
-    fontSize: 14,
-    color: '#64748b',
-    marginLeft: 8,
   },
   list: {
     display: 'flex',

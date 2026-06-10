@@ -4,40 +4,26 @@ import { uid } from '../../types';
 import { loadArticles, addArticle, deleteArticle } from '../../utils/storage';
 import { splitIntoSentences } from '../../utils/splitter';
 import { ArticleMemoryView } from './ArticleMemoryView';
-import { SingleExportBtn, SingleImportBtn } from '../common/JsonImportExport';
+import { ArticleDetailView } from './ArticleDetailView';
+import { Modal } from '../common/Modal';
+import { SingleExportBtn } from '../common/JsonImportExport';
+
+type PageView = 'list' | 'detail' | 'memory';
 
 export const ArticleManager: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [memoryView, setMemoryView] = useState(false);
+  const [view, setView] = useState<PageView>('list');
+
+  // 创建文章弹窗
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [newArticleTitle, setNewArticleTitle] = useState('');
 
   useEffect(() => {
     setArticles(loadArticles());
   }, []);
 
   const refresh = () => setArticles(loadArticles());
-
-  const handleAdd = () => {
-    const trimmedTitle = title.trim() || `未命名文章 ${articles.length + 1}`;
-    const trimmedContent = content.trim();
-    if (!trimmedContent) {
-      alert('请输入文章内容');
-      return;
-    }
-    const article: Article = {
-      id: uid(),
-      title: trimmedTitle,
-      content: trimmedContent,
-      sentences: splitIntoSentences(trimmedContent),
-      createdAt: Date.now(),
-    };
-    addArticle(article);
-    setTitle('');
-    setContent('');
-    refresh();
-  };
 
   const handleDelete = (id: string) => {
     if (confirm('确定删除该文章？')) {
@@ -48,68 +34,90 @@ export const ArticleManager: React.FC = () => {
 
   const handleStartMemory = (article: Article) => {
     setSelectedArticle(article);
-    setMemoryView(true);
+    setView('memory');
   };
 
-  const handleImportArticle = (data: unknown) => {
-    const d = data as Partial<Article>;
-    if (!d.content) {
-      alert('无效的文章数据');
-      return;
-    }
+  /** 创建文章 */
+  const handleCreateArticle = () => {
+    const title = newArticleTitle.trim() || `未命名文章 ${articles.length + 1}`;
     const article: Article = {
-      id: d.id || uid(),
-      title: d.title || '导入的文章',
-      content: d.content,
-      sentences: d.sentences || splitIntoSentences(d.content),
-      createdAt: d.createdAt || Date.now(),
+      id: uid(),
+      title,
+      content: '',
+      sentences: [],
+      createdAt: Date.now(),
     };
     addArticle(article);
+    setCreateModalOpen(false);
+    setNewArticleTitle('');
+    refresh();
+    // 跳转到详情页
+    setSelectedArticle(article);
+    setView('detail');
+  };
+
+  /** 编辑按钮 */
+  const handleEdit = (article: Article) => {
+    setSelectedArticle(article);
+    setView('detail');
+  };
+
+  /** 从详情页返回 */
+  const handleBackToList = () => {
+    setView('list');
+    setSelectedArticle(null);
     refresh();
   };
 
-  if (memoryView && selectedArticle) {
+  /** 从记忆页返回 */
+  const handleBackFromMemory = () => {
+    setView('list');
+    setSelectedArticle(null);
+  };
+
+  /** 数据变更回调 */
+  const handleDataChange = () => {
+    refresh();
+  };
+
+  /* ===== 详情页 ===== */
+  if (view === 'detail' && selectedArticle) {
     return (
-      <ArticleMemoryView
+      <ArticleDetailView
         article={selectedArticle}
-        onBack={() => { setMemoryView(false); setSelectedArticle(null); }}
+        onBack={handleBackToList}
+        onDataChange={handleDataChange}
       />
     );
   }
 
+  /* ===== 记忆页 ===== */
+  if (view === 'memory' && selectedArticle) {
+    return (
+      <ArticleMemoryView
+        article={selectedArticle}
+        onBack={handleBackFromMemory}
+      />
+    );
+  }
+
+  /* ===== 列表页 ===== */
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>📖 语文记忆</h2>
 
-      {/* 新增文章 */}
-      <div style={styles.card}>
-        <h3 style={styles.cardTitle}>✏️ 新增文章</h3>
-        <input
-          style={styles.input}
-          placeholder="文章标题（可选）"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-        />
-        <textarea
-          style={styles.textarea}
-          placeholder="在此粘贴文章正文……"
-          rows={8}
-          value={content}
-          onChange={e => setContent(e.target.value)}
-        />
-        <div style={styles.row}>
-          <button style={styles.primaryBtn} onClick={handleAdd}>
-            📥 导入文章
-          </button>
-          <SingleImportBtn label="文章 (JSON)" onData={handleImportArticle} />
-        </div>
+      {/* 创建按钮 */}
+      <div style={styles.createRow}>
+        <button style={styles.createBtn} onClick={() => { setNewArticleTitle(''); setCreateModalOpen(true); }}>
+          ✏️ 创建文章
+        </button>
       </div>
 
       {/* 文章列表 */}
       <div style={styles.card}>
         <h3 style={styles.cardTitle}>📚 我的文章</h3>
         {articles.length === 0 && (
-          <p style={styles.empty}>还没有文章，请先导入。</p>
+          <p style={styles.empty}>还没有文章，点击上方"创建文章"开始。</p>
         )}
         {articles.map(article => (
           <div key={article.id} style={styles.articleItem}>
@@ -123,6 +131,9 @@ export const ArticleManager: React.FC = () => {
               <button style={styles.memoryBtn} onClick={() => handleStartMemory(article)}>
                 🧠 开始记忆
               </button>
+              <button style={styles.editBtn} onClick={() => handleEdit(article)}>
+                ✏️ 编辑
+              </button>
               <SingleExportBtn
                 label={article.title}
                 data={article}
@@ -135,6 +146,20 @@ export const ArticleManager: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* ===== 创建文章弹窗 ===== */}
+      <Modal open={createModalOpen} title="创建文章" onClose={() => setCreateModalOpen(false)}>
+        <div style={styles.formGroup}>
+          <label style={styles.label}>文章标题</label>
+          <input style={styles.input} placeholder="输入文章标题…"
+            value={newArticleTitle} onChange={e => setNewArticleTitle(e.target.value)}
+            autoFocus onKeyDown={e => e.key === 'Enter' && handleCreateArticle()} />
+        </div>
+        <div style={styles.formActions}>
+          <button style={styles.cancelBtn} onClick={() => setCreateModalOpen(false)}>取消</button>
+          <button style={styles.confirmBtn} onClick={handleCreateArticle}>确认创建</button>
+        </div>
+      </Modal>
     </div>
   );
 };
@@ -142,6 +167,14 @@ export const ArticleManager: React.FC = () => {
 const styles: Record<string, React.CSSProperties> = {
   container: { maxWidth: 800, margin: '0 auto', padding: '24px 16px' },
   title: { textAlign: 'center', color: '#1e293b', marginBottom: 24 },
+  createRow: {
+    display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 28,
+  },
+  createBtn: {
+    padding: '14px 32px', fontSize: 17, fontWeight: 600,
+    backgroundColor: '#1e293b', color: '#ffffff', border: 'none', borderRadius: 10,
+    cursor: 'pointer',
+  },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -151,37 +184,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #e2e8f0',
   },
   cardTitle: { margin: '0 0 12px 0', color: '#334155', fontSize: 18 },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    border: '1px solid #cbd5e1',
-    borderRadius: 6,
-    fontSize: 15,
-    marginBottom: 12,
-    boxSizing: 'border-box',
-  },
-  textarea: {
-    width: '100%',
-    padding: '10px 12px',
-    border: '1px solid #cbd5e1',
-    borderRadius: 6,
-    fontSize: 15,
-    resize: 'vertical',
-    fontFamily: 'inherit',
-    lineHeight: 1.8,
-    marginBottom: 12,
-    boxSizing: 'border-box',
-  },
-  row: { display: 'flex', gap: 10, flexWrap: 'wrap' },
-  primaryBtn: {
-    padding: '10px 20px',
-    fontSize: 15,
-    backgroundColor: '#1e293b',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: 8,
-    cursor: 'pointer',
-  },
   empty: { color: '#94a3b8', textAlign: 'center', padding: 20 },
   articleItem: {
     display: 'flex',
@@ -205,6 +207,10 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     cursor: 'pointer',
   },
+  editBtn: {
+    padding: '6px 14px', fontSize: 14, backgroundColor: '#f1f5f9',
+    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', color: '#475569',
+  },
   deleteBtn: {
     padding: '6px 10px',
     fontSize: 14,
@@ -213,5 +219,22 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: 6,
     cursor: 'pointer',
+  },
+
+  /* 表单 */
+  formGroup: { marginBottom: 14 },
+  label: { display: 'block', fontSize: 14, fontWeight: 600, color: '#475569', marginBottom: 6 },
+  input: {
+    width: '100%', padding: '10px 12px', fontSize: 15,
+    border: '1px solid #cbd5e1', borderRadius: 8, boxSizing: 'border-box',
+  },
+  formActions: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
+  cancelBtn: {
+    padding: '8px 20px', fontSize: 15, backgroundColor: '#f1f5f9',
+    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', color: '#475569',
+  },
+  confirmBtn: {
+    padding: '8px 20px', fontSize: 15, backgroundColor: '#059669',
+    color: '#ffffff', border: 'none', borderRadius: 6, cursor: 'pointer',
   },
 };

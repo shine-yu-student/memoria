@@ -2,7 +2,8 @@
  * 中文句子切分工具
  *
  * 将一段中文文本按分隔符（。！？，、；：……—\n 等）
- * 切分为若干"句子"（相邻分隔符之间的片段）。
+ * 切分为若干"句子"（相邻分隔符之间的片段），
+ * 并保留原始分隔符用于还原显示。
  */
 
 /** 中文分隔符正则 */
@@ -23,6 +24,33 @@ export function splitIntoSentences(text: string): string[] {
     return [text.trim()];
   }
   return raw;
+}
+
+/**
+ * 根据原文和已切分的句子列表，提取每个句子前后的原始分隔符。
+ * 返回长度为 sentences.length + 1 的数组：
+ *   delimiters[i] = 第 i 个句子之前的分隔符（i=0 时通常为空）
+ *   delimiters[sentences.length] = 最后一个句子之后的分隔符
+ *
+ * 用于在渲染时还原原文的标点符号和换行。
+ */
+export function extractDelimiters(content: string, sentences: string[]): string[] {
+  const delimiters: string[] = [];
+  let pos = 0;
+  for (const sentence of sentences) {
+    const idx = content.indexOf(sentence, pos);
+    if (idx === -1) {
+      // 容错：句子未在预期位置找到
+      delimiters.push('');
+      continue;
+    }
+    // pos 到 idx 之间的文本即为该句子之前的分隔符
+    delimiters.push(content.slice(pos, idx));
+    pos = idx + sentence.length;
+  }
+  // 末尾剩余文本
+  delimiters.push(content.slice(pos));
+  return delimiters;
 }
 
 /**

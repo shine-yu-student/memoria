@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Article, BlankItem } from '../../types';
 import { uid } from '../../types';
-import { pickRandomIndices } from '../../utils/splitter';
+import { pickRandomIndices, extractDelimiters } from '../../utils/splitter';
 import { CompareResult } from '../common/CompareResult';
 
 interface Props {
@@ -15,8 +15,12 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
   const [blankIndices, setBlankIndices] = useState<number[]>([]);
   const [customSelected, setCustomSelected] = useState<Set<number>>(new Set());
   const [userInputs, setUserInputs] = useState<Record<string, string>>({});
+  const [graded, setGraded] = useState(false);
+  const [ratio, setRatio] = useState(0.4);
 
   const sentences = article.sentences;
+  // 原始分隔符
+  const delimiters = useMemo(() => extractDelimiters(article.content, sentences), [article.content, sentences]);
 
   /** 全篇记忆 */
   const startFull = () => {
@@ -30,11 +34,12 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
     };
     setBlanks([blank]);
     setUserInputs({ [blank.id]: '' });
+    setGraded(false);
   };
 
   /** 随机记忆 */
   const startRandom = () => {
-    const count = Math.max(1, Math.ceil(sentences.length * 0.4));
+    const count = Math.max(1, Math.ceil(sentences.length * Math.min(1, Math.max(0.01, ratio))));
     const indices = pickRandomIndices(sentences.length, count);
     const items = indices.map(idx => ({
       id: uid(),
@@ -46,6 +51,7 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
     setBlanks(items);
     setBlankIndices(indices);
     setUserInputs(Object.fromEntries(items.map(i => [i.id, ''])));
+    setGraded(false);
     setMode('partial-random');
   };
 
@@ -66,10 +72,11 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
     setBlanks(items);
     setBlankIndices(indices);
     setUserInputs(Object.fromEntries(items.map(i => [i.id, ''])));
+    setGraded(false);
     setMode('partial-custom');
   };
 
-  /** 提交答案 */
+  /** 提交答案（partial 模式用） */
   const handleSubmit = () => {
     const updated = blanks.map(b => ({
       ...b,
@@ -78,7 +85,28 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
       correctFlag: (userInputs[b.id] || '').trim() === b.correct.trim(),
     }));
     setBlanks(updated);
+    setGraded(true);
+  };
+
+  /** 提交全篇记忆并查看结果 */
+  const handleSubmitFull = () => {
+    const updated = blanks.map(b => ({
+      ...b,
+      userInput: userInputs[b.id] || '',
+      graded: true,
+      correctFlag: (userInputs[b.id] || '').trim() === b.correct.trim(),
+    }));
+    setBlanks(updated);
     setMode('result');
+  };
+
+  /** 全部空白是否都正确 */
+  const allCorrect = graded && blanks.every(b => b.correctFlag);
+
+  /** 返回菜单 */
+  const backToMenu = () => {
+    setMode('menu');
+    setGraded(false);
   };
 
   /** 显示模式选择菜单 */
@@ -117,7 +145,25 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
           <button style={styles.optionBtn} onClick={startRandom}>
             🎲 随机记忆
           </button>
-          <p style={styles.optionDesc}>系统随机选取约 40% 的句子供你填写。</p>
+          <p style={styles.optionDesc}>系统随机选取部分句子供你填写。</p>
+          <div style={styles.ratioRow}>
+            <label style={styles.ratioLabel}>选取比例：</label>
+            <input
+              type="number"
+              style={styles.ratioInput}
+              min={0.01}
+              max={1}
+              step={0.05}
+              value={ratio}
+              onChange={e => {
+                const v = parseFloat(e.target.value);
+                if (!isNaN(v)) setRatio(Math.min(1, Math.max(0.01, v)));
+              }}
+            />
+            <span style={styles.ratioHint}>
+              （共 {sentences.length} 句，约 {Math.max(1, Math.ceil(sentences.length * ratio))} 句）
+            </span>
+          </div>
         </div>
 
         <div style={styles.card}>
@@ -162,42 +208,97 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
     );
   }
 
-  /** 记忆答题界面（全篇 / 部分随机 / 部分指定共用） */
-  if (mode === 'full' || mode === 'partial-random' || mode === 'partial-custom') {
+  /** 全篇记忆答题界面 */
+  if (mode === 'full') {
+    return (
+      <div style={styles.container}>
+        <h2 style={styles.title}>📝 全篇记忆{' — '}{article.title}</h2>
+
+        <div style={styles.card}>
+          <p style={{ color: '#64748b', marginBottom: 10 }}>请凭记忆输入整篇文章：</p>
+          <textarea
+            style={styles.textarea}
+            rows={12}
+            placeholder="在此输入文章全文……"
+            value={userInputs[blanks[0]?.id] || ''}
+            onChange={e => setUserInputs({ ...userInputs, [blanks[0].id]: e.target.value })}
+          />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 20 }}>
+          <button style={styles.backBtn} onClick={backToMenu}>🔙 返回</button>
+          <button style={styles.submitBtn} onClick={handleSubmitFull}>📤 提交检查</button>
+        </div>
+      </div>
+    );
+  }
+
+  /** 部分记忆答题界面（随机 / 指定 共用） */
+  if (mode === 'partial-random' || mode === 'partial-custom') {
+    const isRandom = mode === 'partial-random';
+
+    /** 将分隔符中的换行渲染为 <br /> */
+    const renderDelimiter = (delim: string, key: string | number) => {
+      if (!delim) return null;
+      const parts = delim.split(/(\n)/);
+      return (
+        <span key={key} style={styles.articlePunct}>
+          {parts.map((part, i) =>
+            part === '\n' ? <br key={i} /> : part
+          )}
+        </span>
+      );
+    };
+
     return (
       <div style={styles.container}>
         <h2 style={styles.title}>
-          {mode === 'full' ? '📝 全篇记忆' : mode === 'partial-random' ? '🎲 随机记忆' : '✋ 指定记忆'}
+          {isRandom ? '🎲 随机记忆' : '✋ 指定记忆'}
           {' — '}{article.title}
         </h2>
 
-        {mode === 'full' && (
-          <div style={styles.card}>
-            <p style={{ color: '#64748b', marginBottom: 10 }}>请凭记忆输入整篇文章：</p>
-            <textarea
-              style={styles.textarea}
-              rows={12}
-              placeholder="在此输入文章全文……"
-              value={userInputs[blanks[0]?.id] || ''}
-              onChange={e => setUserInputs({ ...userInputs, [blanks[0].id]: e.target.value })}
-            />
+        {allCorrect && (
+          <div style={styles.allCorrectBanner}>
+            🎉 全部正确！太棒了！
           </div>
         )}
 
-        {(mode === 'partial-random' || mode === 'partial-custom') && (
-          <div style={styles.articleScrollContainer}>
-            <p style={{ color: '#64748b', marginBottom: 12, fontSize: 14 }}>
-              全文显示如下，被选中的句子已被替换为输入框。
-            </p>
-            <div style={styles.articleContent}>
-              {sentences.map((s, idx) => {
-                const blankIdx = blankIndices.indexOf(idx);
-                const blankItem = blankIdx !== -1 ? blanks[blankIdx] : undefined;
-                const isLast = idx === sentences.length - 1;
-                return (
-                  <span key={idx} style={styles.articleSegment}>
-                    {blankItem ? (
-                      <span style={styles.blankWrapper}>
+        <div style={styles.articleScrollContainer}>
+          {graded && (
+            <div style={styles.resultSummary}>
+              {blanks.filter(b => b.correctFlag).length}/{blanks.length} 正确
+            </div>
+          )}
+          <div style={styles.articleContent}>
+            {sentences.map((s, idx) => {
+              const blankIdx = blankIndices.indexOf(idx);
+              const isBlank = blankIdx !== -1;
+              const blankItem = isBlank ? blanks[blankIdx] : undefined;
+              const isGradedBlank = graded && isBlank && blankItem;
+
+              // 该句子前的分隔符（delimiters[idx]）
+              const delim = delimiters[idx] || '';
+
+              return (
+                <span key={idx} style={styles.articleSegment}>
+                  {/* 句子前的分隔符 */}
+                  {renderDelimiter(delim, `d-${idx}`)}
+
+                  {isBlank && blankItem ? (
+                    <span style={styles.blankWrapper}>
+                      {graded ? (
+                        <span
+                          style={{
+                            ...styles.articleBlankInput,
+                            ...(blankItem.correctFlag
+                              ? styles.blankCorrect
+                              : styles.blankWrong),
+                          }}
+                          title={blankItem.correctFlag ? '' : `正确答案：${blankItem.correct}`}
+                        >
+                          {userInputs[blankItem.id] || ''}
+                        </span>
+                      ) : (
                         <textarea
                           style={styles.articleBlankInput}
                           rows={1}
@@ -205,31 +306,44 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
                           value={userInputs[blankItem.id] || ''}
                           onChange={e => setUserInputs({ ...userInputs, [blankItem.id]: e.target.value })}
                         />
-                        {!isLast && <span style={styles.articlePunct}>，</span>}
-                      </span>
-                    ) : (
-                      <span style={styles.articleText}>
-                        {s}{!isLast && <span style={styles.articlePunct}>,</span>}
-                      </span>
-                    )}
-                  </span>
-                );
-              })}
-            </div>
+                      )}
+                    </span>
+                  ) : (
+                    <span style={styles.articleText}>
+                      {s}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
+            {/* 末尾分隔符 */}
+            {renderDelimiter(delimiters[sentences.length] || '', 'd-last')}
           </div>
-        )}
+        </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 20 }}>
-          <button style={styles.backBtn} onClick={() => setMode('menu')}>🔙 返回</button>
-          <button style={styles.submitBtn} onClick={handleSubmit}>📤 提交检查</button>
+          <button style={styles.backBtn} onClick={backToMenu}>🔙 返回</button>
+          {!graded ? (
+            <button style={styles.submitBtn} onClick={handleSubmit}>📤 提交检查</button>
+          ) : (
+            <button style={styles.retryBtn} onClick={() => {
+              // 重置为未批改状态，清空输入
+              const reset = blanks.map(b => ({ ...b, userInput: '', graded: false, correctFlag: false }));
+              setBlanks(reset);
+              setUserInputs(Object.fromEntries(reset.map(i => [i.id, ''])));
+              setGraded(false);
+            }}>
+              🔄 重新作答
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
-  /** 结果界面 */
+  /** 全篇记忆结果（CompareResult 不带分数） */
   if (mode === 'result') {
-    return <CompareResult blanks={blanks} onBack={() => setMode('menu')} />;
+    return <CompareResult blanks={blanks} onBack={backToMenu} />;
   }
 
   return null;
@@ -342,7 +456,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   articleBlankInput: {
     display: 'inline-block',
-    width: 180,
+    minWidth: 160,
     padding: '4px 10px',
     border: '2px dashed #059669',
     borderRadius: 6,
@@ -353,6 +467,17 @@ const styles: Record<string, React.CSSProperties> = {
     verticalAlign: 'middle',
     outline: 'none',
   },
+  blankCorrect: {
+    border: '2px dashed #059669',
+    backgroundColor: '#f0fdf4',
+    color: '#16a34a',
+  },
+  blankWrong: {
+    border: '2px solid #dc2626',
+    backgroundColor: '#fef2f2',
+    color: '#dc2626',
+    cursor: 'pointer',
+  },
   submitBtn: {
     padding: '10px 32px',
     fontSize: 16,
@@ -361,5 +486,63 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: 8,
     cursor: 'pointer',
+  },
+  retryBtn: {
+    padding: '10px 32px',
+    fontSize: 16,
+    backgroundColor: '#1e293b',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
+  },
+  /* 比例输入 */
+  ratioRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    flexWrap: 'wrap',
+  },
+  ratioLabel: {
+    fontSize: 14,
+    color: '#475569',
+    fontWeight: 600,
+  },
+  ratioInput: {
+    width: 80,
+    padding: '6px 10px',
+    border: '1px solid #cbd5e1',
+    borderRadius: 6,
+    fontSize: 15,
+    textAlign: 'center',
+    outline: 'none',
+  },
+  ratioHint: {
+    fontSize: 13,
+    color: '#94a3b8',
+  },
+  /* 全对横幅 */
+  allCorrectBanner: {
+    textAlign: 'center',
+    padding: '12px 20px',
+    backgroundColor: '#dcfce7',
+    color: '#16a34a',
+    fontWeight: 700,
+    fontSize: 18,
+    borderRadius: 10,
+    marginBottom: 16,
+    border: '2px solid #86efac',
+  },
+  /* 结果概要 */
+  resultSummary: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 12,
+    padding: '6px 12px',
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    display: 'inline-block',
   },
 };

@@ -438,12 +438,6 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
               <span>曾答错</span>
               <strong style={{ color: '#dc2626' }}>{progress.wrong}</strong>
             </div>
-            <div style={styles.statRow}>
-              <span>最终正确率</span>
-              <strong style={{ fontSize: 24 }}>
-                {progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 100}%
-              </strong>
-            </div>
           </div>
 
           {/* 错词列表 */}
