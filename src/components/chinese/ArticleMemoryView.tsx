@@ -189,7 +189,7 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
                   style={{ marginRight: 6 }}
                 />
                 <span>
-                  <strong style={{ color: '#64748b' }}>#{idx + 1}</strong>{' '}
+                  <strong style={{ color: 'var(--text-description)' }}>#{idx + 1}</strong>{' '}
                   {s.length > 50 ? s.slice(0, 50) + '…' : s}
                 </span>
               </label>
@@ -215,7 +215,7 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
         <h2 style={styles.title}>📝 全篇记忆{' — '}{article.title}</h2>
 
         <div style={styles.card}>
-          <p style={{ color: '#64748b', marginBottom: 10 }}>请凭记忆输入整篇文章：</p>
+          <p style={{ color: 'var(--text-description)', marginBottom: 10 }}>请凭记忆输入整篇文章：</p>
           <textarea
             style={styles.textarea}
             rows={12}
@@ -351,27 +351,27 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
 
 const styles: Record<string, React.CSSProperties> = {
   container: { maxWidth: 800, margin: '0 auto', padding: '24px 16px' },
-  title: { textAlign: 'center', color: '#1e293b', marginBottom: 8 },
-  meta: { textAlign: 'center', color: '#94a3b8', fontSize: 14, marginBottom: 24 },
+  title: { textAlign: 'center', color: 'var(--text-primary)', marginBottom: 8 },
+  meta: { textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--bg-card)',
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    border: '1px solid #e2e8f0',
+    boxShadow: 'var(--shadow-card)',
+    border: '1px solid var(--border-default)',
   },
   optionBtn: {
     padding: '10px 24px',
     fontSize: 16,
-    backgroundColor: '#1e293b',
-    color: '#ffffff',
+    backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-on-primary)',
     border: 'none',
     borderRadius: 8,
     cursor: 'pointer',
     marginBottom: 8,
   },
-  optionDesc: { color: '#64748b', fontSize: 14, lineHeight: 1.6 },
+  optionDesc: { color: 'var(--text-description)', fontSize: 14, lineHeight: 1.6 },
   sentenceGrid: {
     display: 'flex',
     flexDirection: 'column',
@@ -385,20 +385,20 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     borderRadius: 6,
     cursor: 'pointer',
-    backgroundColor: '#f8fafc',
-    border: '1px solid #e2e8f0',
+    backgroundColor: 'var(--bg-page)',
+    border: '1px solid var(--border-default)',
     lineHeight: 1.6,
     fontSize: 14,
   },
   sentenceLabelSelected: {
-    backgroundColor: '#dcfce7',
-    borderColor: '#86efac',
+    backgroundColor: 'var(--bg-success)',
+    borderColor: 'var(--border-green-light)',
   },
   primaryBtn: {
     padding: '10px 20px',
     fontSize: 15,
-    backgroundColor: '#059669',
-    color: '#ffffff',
+    backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-on-primary)',
     border: 'none',
     borderRadius: 8,
     cursor: 'pointer',
@@ -406,8 +406,8 @@ const styles: Record<string, React.CSSProperties> = {
   backBtn: {
     padding: '10px 24px',
     fontSize: 15,
-    backgroundColor: '#e2e8f0',
-    color: '#475569',
+    backgroundColor: 'var(--border-default)',
+    color: 'var(--text-secondary)',
     border: 'none',
     borderRadius: 8,
     cursor: 'pointer',
@@ -415,7 +415,7 @@ const styles: Record<string, React.CSSProperties> = {
   textarea: {
     width: '100%',
     padding: '12px',
-    border: '1px solid #cbd5e1',
+    border: '1px solid var(--border-strong)',
     borderRadius: 8,
     fontSize: 15,
     resize: 'vertical',
@@ -425,11 +425,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   /* 文章区域（部分记忆） */
   articleScrollContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--bg-card)',
     borderRadius: 12,
     padding: '20px 24px',
-    border: '1px solid #e2e8f0',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    border: '1px solid var(--border-default)',
+    boxShadow: 'var(--shadow-card)',
     maxHeight: 'calc(100vh - 280px)',
     overflowY: 'auto',
     lineHeight: 2,
@@ -442,12 +442,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   articleText: {
     fontSize: 16,
-    color: '#1e293b',
+    color: 'var(--text-primary)',
     lineHeight: 2,
   },
   articlePunct: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
     marginRight: 2,
   },
   blankWrapper: {
@@ -458,31 +458,31 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-block',
     minWidth: 160,
     padding: '4px 10px',
-    border: '2px dashed #059669',
+    border: '2px dashed var(--border-green)',
     borderRadius: 6,
     fontSize: 15,
     fontFamily: 'inherit',
     lineHeight: 1.6,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: 'var(--bg-blank)',
     verticalAlign: 'middle',
     outline: 'none',
   },
   blankCorrect: {
-    border: '2px dashed #059669',
-    backgroundColor: '#f0fdf4',
-    color: '#16a34a',
+    border: '2px dashed var(--border-green)',
+    backgroundColor: 'var(--bg-blank)',
+    color: 'var(--text-green-dark)',
   },
   blankWrong: {
-    border: '2px solid #dc2626',
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
+    border: '2px solid var(--text-red)',
+    backgroundColor: 'var(--bg-warning)',
+    color: 'var(--text-red)',
     cursor: 'pointer',
   },
   submitBtn: {
     padding: '10px 32px',
     fontSize: 16,
-    backgroundColor: '#059669',
-    color: '#ffffff',
+    backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-on-primary)',
     border: 'none',
     borderRadius: 8,
     cursor: 'pointer',
@@ -490,8 +490,8 @@ const styles: Record<string, React.CSSProperties> = {
   retryBtn: {
     padding: '10px 32px',
     fontSize: 16,
-    backgroundColor: '#1e293b',
-    color: '#ffffff',
+    backgroundColor: 'var(--bg-hover)',
+    color: 'var(--text-secondary)',
     border: 'none',
     borderRadius: 8,
     cursor: 'pointer',
@@ -506,13 +506,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   ratioLabel: {
     fontSize: 14,
-    color: '#475569',
+    color: 'var(--text-secondary)',
     fontWeight: 600,
   },
   ratioInput: {
     width: 80,
     padding: '6px 10px',
-    border: '1px solid #cbd5e1',
+    border: '1px solid var(--border-strong)',
     borderRadius: 6,
     fontSize: 15,
     textAlign: 'center',
@@ -520,28 +520,28 @@ const styles: Record<string, React.CSSProperties> = {
   },
   ratioHint: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: 'var(--text-muted)',
   },
   /* 全对横幅 */
   allCorrectBanner: {
     textAlign: 'center',
     padding: '12px 20px',
-    backgroundColor: '#dcfce7',
-    color: '#16a34a',
+    backgroundColor: 'var(--bg-success)',
+    color: 'var(--text-green-dark)',
     fontWeight: 700,
     fontSize: 18,
     borderRadius: 10,
     marginBottom: 16,
-    border: '2px solid #86efac',
+    border: '2px solid var(--border-green-light)',
   },
   /* 结果概要 */
   resultSummary: {
     textAlign: 'center',
     fontSize: 14,
-    color: '#64748b',
+    color: 'var(--text-description)',
     marginBottom: 12,
     padding: '6px 12px',
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'var(--bg-page)',
     borderRadius: 8,
     display: 'inline-block',
   },

@@ -42,22 +42,22 @@ export const Modal: React.FC<ModalProps> = ({ open, title, children, onClose }) 
 const styles: Record<string, React.CSSProperties> = {
   overlay: {
     position: 'fixed', inset: 0, zIndex: 1000,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'var(--overlay)',
     display: 'flex', justifyContent: 'center', alignItems: 'center',
   },
   dialog: {
-    backgroundColor: '#ffffff', borderRadius: 16,
+    backgroundColor: 'var(--bg-card)', borderRadius: 16,
     padding: 0, minWidth: 360, maxWidth: 480, width: '90%',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+    boxShadow: 'var(--shadow-dialog)',
   },
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '16px 20px', borderBottom: '1px solid #e2e8f0',
+    padding: '16px 20px', borderBottom: '1px solid var(--border-default)',
   },
-  title: { margin: 0, fontSize: 18, fontWeight: 700, color: '#1e293b' },
+  title: { margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' },
   closeBtn: {
     background: 'none', border: 'none', fontSize: 24, cursor: 'pointer',
-    color: '#94a3b8', lineHeight: 1, padding: '0 4px',
+    color: 'var(--text-muted)', lineHeight: 1, padding: '0 4px',
   },
   body: { padding: '20px' },
 };

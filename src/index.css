@@ -1,5 +1,123 @@
 /* Memoria - Global Styles */
 
+/* ==================== 主题变量 ==================== */
+
+:root {
+  /* 页面背景 */
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-nav: #1e293b;
+  --bg-primary: #059669;
+  --bg-danger: #fee2e2;
+  --bg-danger-solid: #fef2f2;
+  --bg-success: #dcfce7;
+  --bg-hover: #f1f5f9;
+  --bg-selected: #dcfce7;
+  --bg-blank: #f0fdf4;
+  --bg-warning: #fef2f2;
+  --bg-ocr: #f0f9ff;
+  --bg-json: #f5f3ff;
+  --bg-tab-active: #334155;
+  --bg-transparent: transparent;
+
+  /* 文字颜色 */
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-description: #64748b;
+  --text-on-primary: #ffffff;
+  --text-on-nav: #f1f5f9;
+  --text-nav-tab: #94a3b8;
+  --text-green: #059669;
+  --text-red: #dc2626;
+  --text-green-dark: #16a34a;
+  --text-orange: #ea580c;
+  --text-ocr: #0369a1;
+  --text-json: #7c3aed;
+
+  /* 边框 */
+  --border-default: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --border-green: #059669;
+  --border-red: #fecaca;
+  --border-green-light: #86efac;
+  --border-ocr: #bae6fd;
+  --border-json: #ddd6fe;
+  --border-wrong-input: #fca5a5;
+
+  /* 阴影 */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-header: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-dialog: 0 8px 32px rgba(0,0,0,0.15);
+
+  /* 遮罩 */
+  --overlay: rgba(0,0,0,0.4);
+
+  /* 滚动条 */
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+
+  /* 闪卡界面 */
+  --bg-flashcard-page: #f0fdf4;
+}
+
+/* ==================== 深色主题 ==================== */
+
+[data-theme="dark"] {
+  --bg-page: #0f172a;
+  --bg-card: #1e293b;
+  --bg-input: #334155;
+  --bg-nav: #020617;
+  --bg-primary: #059669;
+  --bg-danger: #450a0a;
+  --bg-danger-solid: #450a0a;
+  --bg-success: #052e16;
+  --bg-hover: #334155;
+  --bg-selected: #064e3b;
+  --bg-blank: #064e3b;
+  --bg-warning: #450a0a;
+  --bg-ocr: #0c4a6e;
+  --bg-json: #3b0764;
+  --bg-tab-active: #475569;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-description: #94a3b8;
+  --text-on-primary: #ffffff;
+  --text-on-nav: #f1f5f9;
+  --text-nav-tab: #64748b;
+  --text-green: #34d399;
+  --text-red: #fca5a5;
+  --text-green-dark: #4ade80;
+  --text-orange: #fb923c;
+  --text-ocr: #7dd3fc;
+  --text-json: #c4b5fd;
+
+  --border-default: #334155;
+  --border-strong: #475569;
+  --border-green: #059669;
+  --border-red: #7f1d1d;
+  --border-green-light: #166534;
+  --border-ocr: #0e7490;
+  --border-json: #5b21b6;
+  --border-wrong-input: #dc2626;
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-header: 0 1px 3px rgba(0,0,0,0.2);
+  --shadow-dialog: 0 8px 32px rgba(0,0,0,0.5);
+
+  --overlay: rgba(0,0,0,0.6);
+
+  --scrollbar-thumb: #475569;
+  --scrollbar-thumb-hover: #64748b;
+
+  --bg-flashcard-page: #022c22;
+}
+
+/* ==================== 基础样式 ==================== */
+
 * {
   margin: 0;
   padding: 0;
@@ -11,9 +129,10 @@ body {
     'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
   line-height: 1.6;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 button {
@@ -37,15 +156,23 @@ button:disabled {
 input, textarea {
   font-family: inherit;
   outline: none;
-  transition: border-color 0.15s;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  transition: border-color 0.15s, background-color 0.2s, color 0.2s;
 }
 
 input:focus, textarea:focus {
-  border-color: #059669 !important;
+  border-color: var(--border-green) !important;
 }
 
 textarea {
   line-height: 1.8;
+}
+
+/* 输入框边框默认使用 strong 色 */
+input, textarea, select {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
 }
 
 /* Scrollbar */
@@ -58,15 +185,20 @@ textarea {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Spinner animation */
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* 过渡动画 */
+* {
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }

@@ -44,10 +44,10 @@ export function computeDiff(original: string, userInput: string): DiffSegment[] 
 }
 
 const styleMap: Record<DiffSegment['type'], React.CSSProperties> = {
-  correct: { color: '#16a34a' },
-  incorrect: { backgroundColor: '#fecaca', textDecoration: 'line-through', color: '#dc2626' },
-  missing: { backgroundColor: '#fed7aa', color: '#ea580c' },
-  extra: { color: '#dc2626', textDecoration: 'line-through', backgroundColor: '#fee2e2' },
+  correct: { color: 'var(--text-green-dark)' },
+  incorrect: { backgroundColor: 'var(--border-red)', textDecoration: 'line-through', color: 'var(--text-red)' },
+  missing: { backgroundColor: '#fed7aa', color: 'var(--text-orange)' },
+  extra: { color: 'var(--text-red)', textDecoration: 'line-through', backgroundColor: 'var(--bg-danger)' },
 };
 
 /** 将差异分段渲染为带样式的 <span> 列表 */

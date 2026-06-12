@@ -260,8 +260,8 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
                           setSelectedWordBookIds(bn);
                         }
                       }} />
-                    <span style={{ color: '#1e293b' }}>{e.english}</span>
-                    <span style={{ color: '#94a3b8', marginLeft: 8 }}>{e.chinese}</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{e.english}</span>
+                    <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{e.chinese}</span>
                   </label>
                 ))}
               </div>
@@ -305,8 +305,8 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
                           setSelectedSentenceBookIds(bn);
                         }
                       }} />
-                    <span style={{ color: '#1e293b' }}>{e.english}</span>
-                    <span style={{ color: '#94a3b8', marginLeft: 8 }}>{e.chinese}</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{e.english}</span>
+                    <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{e.chinese}</span>
                   </label>
                 ))}
               </div>
@@ -432,11 +432,11 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
             </div>
             <div style={styles.statRow}>
               <span>答对次数</span>
-              <strong style={{ color: '#16a34a' }}>{progress.done}</strong>
+              <strong style={{ color: 'var(--text-green-dark)' }}>{progress.done}</strong>
             </div>
             <div style={styles.statRow}>
               <span>曾答错</span>
-              <strong style={{ color: '#dc2626' }}>{progress.wrong}</strong>
+              <strong style={{ color: 'var(--text-red)' }}>{progress.wrong}</strong>
             </div>
           </div>
 
@@ -461,9 +461,9 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
                   return Array.from(countMap.values()).map(({ entry, count }) => (
                     <div key={entry.id} style={styles.wrongItem}>
                       <span style={{ fontWeight: 600 }}>{entry.english}</span>
-                      <span style={{ color: '#64748b' }}> — {entry.chinese}</span>
+                      <span style={{ color: 'var(--text-description)' }}> — {entry.chinese}</span>
                       {count > 1 && (
-                        <span style={{ color: '#dc2626', marginLeft: 8, fontSize: 13 }}>
+                        <span style={{ color: 'var(--text-red)', marginLeft: 8, fontSize: 13 }}>
                           （错误 {count} 次）
                         </span>
                       )}
@@ -493,22 +493,22 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack }) => {
 const styles: Record<string, React.CSSProperties> = {
   /* ----- 通用 ----- */
   container: { maxWidth: 800, margin: '0 auto', padding: '24px 16px' },
-  title: { textAlign: 'center', color: '#1e293b', marginBottom: 8 },
-  meta: { textAlign: 'center', color: '#64748b', fontSize: 14, marginBottom: 20 },
-  empty: { textAlign: 'center', color: '#94a3b8', padding: 40 },
+  title: { textAlign: 'center', color: 'var(--text-primary)', marginBottom: 8 },
+  meta: { textAlign: 'center', color: 'var(--text-description)', fontSize: 14, marginBottom: 20 },
+  empty: { textAlign: 'center', color: 'var(--text-muted)', padding: 40 },
 
   /* ----- 选择界面 ----- */
   bookCard: {
-    backgroundColor: '#ffffff', borderRadius: 10, padding: '12px 16px',
-    marginBottom: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+    backgroundColor: 'var(--bg-card)', borderRadius: 10, padding: '12px 16px',
+    marginBottom: 12, border: '1px solid var(--border-default)', boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
   },
   bookHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   bookCheckbox: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flex: 1 },
-  bookTitle: { fontSize: 16, color: '#1e293b' },
-  bookMeta: { fontSize: 13, color: '#94a3b8', marginLeft: 6 },
+  bookTitle: { fontSize: 16, color: 'var(--text-primary)' },
+  bookMeta: { fontSize: 13, color: 'var(--text-muted)', marginLeft: 6 },
   expandBtn: {
-    padding: '4px 12px', fontSize: 13, backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', color: '#475569',
+    padding: '4px 12px', fontSize: 13, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
   },
   entryList: { marginTop: 10, marginLeft: 24, display: 'flex', flexDirection: 'column', gap: 4 },
   entryCheckbox: {
@@ -516,123 +516,123 @@ const styles: Record<string, React.CSSProperties> = {
   },
   actions: { display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24, flexWrap: 'wrap' },
   backBtn: {
-    padding: '10px 24px', fontSize: 15, backgroundColor: '#e2e8f0',
-    color: '#475569', border: 'none', borderRadius: 8, cursor: 'pointer',
+    padding: '10px 24px', fontSize: 15, backgroundColor: 'var(--border-default)',
+    color: 'var(--text-secondary)', border: 'none', borderRadius: 8, cursor: 'pointer',
   },
   startBtn: {
-    padding: '10px 24px', fontSize: 15, backgroundColor: '#059669',
-    color: '#ffffff', border: 'none', borderRadius: 8, cursor: 'pointer',
+    padding: '10px 24px', fontSize: 15, backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-on-primary)', border: 'none', borderRadius: 8, cursor: 'pointer',
   },
 
   /* ----- 闪卡界面 ----- */
   flashcardPage: {
     display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)', // 减去 navbar 高度
-    backgroundColor: '#f0fdf4',
+    backgroundColor: 'var(--bg-flashcard-page)',
   },
   topBar: {
     display: 'flex', alignItems: 'center', gap: 16,
-    padding: '12px 24px', backgroundColor: '#ffffff',
-    borderBottom: '1px solid #e2e8f0',
+    padding: '12px 24px', backgroundColor: 'var(--bg-card)',
+    borderBottom: '1px solid var(--border-default)',
   },
   miniBackBtn: {
-    padding: '6px 14px', fontSize: 14, backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', color: '#475569',
+    padding: '6px 14px', fontSize: 14, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
     whiteSpace: 'nowrap',
   },
   progressWrap: { flex: 1, display: 'flex', alignItems: 'center', gap: 12 },
   progressTrack: {
-    flex: 1, height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, overflow: 'hidden',
+    flex: 1, height: 8, backgroundColor: 'var(--border-default)', borderRadius: 4, overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: '#059669', borderRadius: 4, transition: 'width 0.3s' },
-  progressText: { fontSize: 14, color: '#64748b', whiteSpace: 'nowrap' },
+  progressFill: { height: '100%', backgroundColor: 'var(--bg-primary)', borderRadius: 4, transition: 'width 0.3s' },
+  progressText: { fontSize: 14, color: 'var(--text-description)', whiteSpace: 'nowrap' },
 
   cardArea: {
     flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 24,
   },
   flashcard: {
     width: '100%', maxWidth: 560,
-    backgroundColor: '#ffffff', borderRadius: 20,
+    backgroundColor: 'var(--bg-card)', borderRadius: 20,
     padding: '40px 32px',
     boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
   },
   tag: {
-    fontSize: 13, color: '#64748b', backgroundColor: '#f1f5f9',
+    fontSize: 13, color: 'var(--text-description)', backgroundColor: 'var(--bg-hover)',
     padding: '4px 12px', borderRadius: 12,
   },
   chineseDisplay: {
-    fontSize: 32, fontWeight: 700, color: '#1e293b',
+    fontSize: 32, fontWeight: 700, color: 'var(--text-primary)',
     textAlign: 'center', lineHeight: 1.4, minHeight: 80,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     wordBreak: 'break-word', maxWidth: '100%',
   },
   revealBox: {
-    backgroundColor: '#fef2f2', border: '1px solid #fecaca',
+    backgroundColor: 'var(--bg-warning)', border: '1px solid var(--border-red)',
     borderRadius: 10, padding: '14px 20px', textAlign: 'center', width: '100%',
   },
-  revealLabel: { fontSize: 14, color: '#dc2626', fontWeight: 600 },
-  revealAnswer: { fontSize: 22, fontWeight: 700, color: '#dc2626', marginLeft: 8 },
-  revealHint: { fontSize: 13, color: '#94a3b8', marginTop: 8 },
+  revealLabel: { fontSize: 14, color: 'var(--text-red)', fontWeight: 600 },
+  revealAnswer: { fontSize: 22, fontWeight: 700, color: 'var(--text-red)', marginLeft: 8 },
+  revealHint: { fontSize: 13, color: 'var(--text-muted)', marginTop: 8 },
   flashcardInput: {
     width: '100%', padding: '14px 16px', fontSize: 18, textAlign: 'center',
-    border: '2px solid #cbd5e1', borderRadius: 10,
+    border: '2px solid var(--border-strong)', borderRadius: 10,
     outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
   },
   flashcardInputWrong: {
-    borderColor: '#fca5a5', backgroundColor: '#fff5f5',
+    borderColor: 'var(--border-wrong-input)', backgroundColor: 'var(--bg-warning)',
   },
   submitFlashBtn: {
     width: '100%', padding: '14px', fontSize: 18, fontWeight: 600,
-    backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: 10,
+    backgroundColor: 'var(--bg-primary)', color: 'var(--text-on-primary)', border: 'none', borderRadius: 10,
     cursor: 'pointer',
   },
-  enterHint: { fontSize: 13, color: '#94a3b8', marginTop: -8 },
+  enterHint: { fontSize: 13, color: 'var(--text-muted)', marginTop: -8 },
 
   /* ----- 完成过渡 ----- */
   completedMsg: {
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '20px 0',
   },
   resultBtn: {
-    padding: '12px 32px', fontSize: 16, backgroundColor: '#1e293b',
-    color: '#ffffff', border: 'none', borderRadius: 8, cursor: 'pointer', marginTop: 8,
+    padding: '12px 32px', fontSize: 16, backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-on-primary)', border: 'none', borderRadius: 8, cursor: 'pointer', marginTop: 8,
   },
 
   /* ----- 结果界面 ----- */
   resultCard: {
     maxWidth: 500, margin: '40px auto',
-    backgroundColor: '#ffffff', borderRadius: 20, padding: '40px 32px',
+    backgroundColor: 'var(--bg-card)', borderRadius: 20, padding: '40px 32px',
     boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
     textAlign: 'center',
   },
   resultIcon: { fontSize: 64, marginBottom: 8 },
-  resultTitle: { fontSize: 28, color: '#1e293b', marginBottom: 24 },
+  resultTitle: { fontSize: 28, color: 'var(--text-primary)', marginBottom: 24 },
   resultStats: {
     display: 'flex', flexDirection: 'column', gap: 12,
     marginBottom: 24, textAlign: 'left',
   },
   statRow: {
     display: 'flex', justifyContent: 'space-between',
-    padding: '10px 16px', backgroundColor: '#f8fafc', borderRadius: 8,
-    fontSize: 16, color: '#475569',
+    padding: '10px 16px', backgroundColor: 'var(--bg-page)', borderRadius: 8,
+    fontSize: 16, color: 'var(--text-secondary)',
   },
   wrongDetails: { marginBottom: 24, textAlign: 'left' },
   wrongSummary: {
-    cursor: 'pointer', color: '#dc2626', fontSize: 15,
+    cursor: 'pointer', color: 'var(--text-red)', fontSize: 15,
     padding: 8, fontWeight: 600,
   },
   wrongList: {
     marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4,
     maxHeight: 300, overflowY: 'auto',
   },
-  wrongItem: { padding: '6px 12px', fontSize: 14, color: '#1e293b' },
+  wrongItem: { padding: '6px 12px', fontSize: 14, color: 'var(--text-primary)' },
   backToSelectBtn: {
     display: 'block', width: '100%', padding: '12px', fontSize: 16,
-    backgroundColor: '#1e293b', color: '#ffffff', border: 'none', borderRadius: 8,
+    backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)', border: 'none', borderRadius: 8,
     cursor: 'pointer', marginBottom: 8,
   },
   backHomeBtn: {
     display: 'block', width: '100%', padding: '12px', fontSize: 16,
-    backgroundColor: '#e2e8f0', color: '#475569', border: 'none', borderRadius: 8,
+    backgroundColor: 'var(--border-default)', color: 'var(--text-secondary)', border: 'none', borderRadius: 8,
     cursor: 'pointer',
   },
 };

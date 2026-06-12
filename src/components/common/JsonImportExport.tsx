@@ -61,7 +61,7 @@ export const JsonImportExport: React.FC<JsonImportExportProps> = ({ onImport }) 
       }
       importAll(data);
       onImport();
-      alert('✅ 全量导入成功！');
+      alert('✅ 导入成功！（按标题合并，同名词书/句书的条目已合并去重）');
     } catch (err) {
       alert(`导入失败: ${err instanceof Error ? err.message : '未知错误'}`);
     } finally {
@@ -74,6 +74,7 @@ export const JsonImportExport: React.FC<JsonImportExportProps> = ({ onImport }) 
       <h2 style={styles.title}>📦 全量导入 / 导出</h2>
       <p style={styles.desc}>
         将系统中的全部文章、词书和句书导出为单个 JSON 文件，或从备份文件恢复。
+        导入时按标题合并：同名的词书/句书条目会合并并去重，不会丢失已有数据。
       </p>
 
       <div style={styles.actions}>
@@ -146,21 +147,21 @@ export const SingleImportBtn: React.FC<SingleImportProps> = ({ label, onData }) 
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--bg-card)',
     borderRadius: 12,
     padding: 24,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    border: '1px solid #e2e8f0',
+    boxShadow: 'var(--shadow-card)',
+    border: '1px solid var(--border-default)',
     marginBottom: 24,
   },
   title: {
     fontSize: 20,
     fontWeight: 700,
-    color: '#1e293b',
+    color: 'var(--text-primary)',
     marginBottom: 8,
   },
   desc: {
-    color: '#64748b',
+    color: 'var(--text-description)',
     fontSize: 14,
     marginBottom: 20,
     lineHeight: 1.6,
@@ -173,10 +174,10 @@ const styles: Record<string, React.CSSProperties> = {
   btn: {
     padding: '10px 20px',
     fontSize: 15,
-    border: '1px solid #cbd5e1',
+    border: '1px solid var(--border-strong)',
     borderRadius: 8,
-    backgroundColor: '#ffffff',
-    color: '#1e293b',
+    backgroundColor: 'var(--bg-card)',
+    color: 'var(--text-primary)',
     cursor: 'pointer',
     transition: 'background 0.15s',
   },
@@ -190,10 +191,10 @@ const styles: Record<string, React.CSSProperties> = {
 const sBtn: React.CSSProperties = {
   padding: '8px 16px',
   fontSize: 14,
-  border: '1px solid #cbd5e1',
+  border: '1px solid var(--border-strong)',
   borderRadius: 6,
-  backgroundColor: '#ffffff',
-  color: '#1e293b',
+  backgroundColor: 'var(--bg-card)',
+  color: 'var(--text-primary)',
   cursor: 'pointer',
 };
 

@@ -201,56 +201,56 @@ export const BookManager: React.FC = () => {
 
 const styles: Record<string, React.CSSProperties> = {
   container: { maxWidth: 800, margin: '0 auto', padding: '24px 16px' },
-  title: { textAlign: 'center', color: '#1e293b', marginBottom: 24 },
+  title: { textAlign: 'center', color: 'var(--text-primary)', marginBottom: 24 },
   createRow: {
     display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 28,
   },
   createBtn: {
     padding: '14px 32px', fontSize: 17, fontWeight: 600,
-    backgroundColor: '#1e293b', color: '#ffffff', border: 'none', borderRadius: 10,
+    backgroundColor: 'var(--bg-primary)', color: 'var(--text-on-primary)', border: 'none', borderRadius: 10,
     cursor: 'pointer',
   },
   section: {
-    backgroundColor: '#ffffff', borderRadius: 12, padding: 20,
-    marginBottom: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0',
+    backgroundColor: 'var(--bg-card)', borderRadius: 12, padding: 20,
+    marginBottom: 20, boxShadow: 'var(--shadow-card)', border: '1px solid var(--border-default)',
   },
-  sectionTitle: { margin: '0 0 12px 0', color: '#334155', fontSize: 18 },
-  empty: { color: '#94a3b8', textAlign: 'center', padding: 20 },
+  sectionTitle: { margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: 18 },
+  empty: { color: 'var(--text-muted)', textAlign: 'center', padding: 20 },
   bookItem: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '12px 0', borderBottom: '1px solid #f1f5f9', gap: 12, flexWrap: 'wrap',
+    padding: '12px 0', borderBottom: '1px solid var(--border-default)', gap: 12, flexWrap: 'wrap',
   },
   bookInfo: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 120 },
-  bookTitle: { fontWeight: 600, color: '#1e293b' },
-  bookMeta: { fontSize: 13, color: '#94a3b8' },
+  bookTitle: { fontWeight: 600, color: 'var(--text-primary)' },
+  bookMeta: { fontSize: 13, color: 'var(--text-muted)' },
   bookActions: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' },
   editBtn: {
-    padding: '6px 14px', fontSize: 14, backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', color: '#475569',
+    padding: '6px 14px', fontSize: 14, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
   },
   deleteBtn: {
-    padding: '6px 10px', fontSize: 14, backgroundColor: '#fee2e2',
-    color: '#dc2626', border: 'none', borderRadius: 6, cursor: 'pointer',
+    padding: '6px 10px', fontSize: 14, backgroundColor: 'var(--bg-danger)',
+    color: 'var(--text-red)', border: 'none', borderRadius: 6, cursor: 'pointer',
   },
   memoryBtn: {
-    padding: '14px 40px', fontSize: 18, backgroundColor: '#059669',
-    color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 600,
+    padding: '14px 40px', fontSize: 18, backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-on-primary)', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 600,
   },
 
   /* 表单 */
   formGroup: { marginBottom: 14 },
-  label: { display: 'block', fontSize: 14, fontWeight: 600, color: '#475569', marginBottom: 6 },
+  label: { display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 },
   input: {
     width: '100%', padding: '10px 12px', fontSize: 15,
-    border: '1px solid #cbd5e1', borderRadius: 8, boxSizing: 'border-box',
+    border: '1px solid var(--border-strong)', borderRadius: 8, boxSizing: 'border-box',
   },
   formActions: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
   cancelBtn: {
-    padding: '8px 20px', fontSize: 15, backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', color: '#475569',
+    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
   },
   confirmBtn: {
-    padding: '8px 20px', fontSize: 15, backgroundColor: '#059669',
-    color: '#ffffff', border: 'none', borderRadius: 6, cursor: 'pointer',
+    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-on-primary)', border: 'none', borderRadius: 6, cursor: 'pointer',
   },
 };

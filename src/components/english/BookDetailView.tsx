@@ -379,11 +379,11 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
           <div style={styles.ocrLoading}>
             <div style={styles.spinner}></div>
             <p>正在识别图片中的文字，请稍候…</p>
-            <p style={{ fontSize: 13, color: '#94a3b8' }}>首次使用会下载语言包，可能需要额外时间</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>首次使用会下载语言包，可能需要额外时间</p>
           </div>
         ) : (
           <>
-            <p style={{ color: '#475569', marginBottom: 16, lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
               选择包含单词和中文释义的图片，系统将自动识别并提取其中的内容。
               支持 .png、.jpg、.jpeg 格式，可多选。
             </p>
@@ -398,7 +398,7 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
               <span style={styles.fileUploadBtn}>📂 选择图片</span>
             </label>
             {ocrImageNames && (
-              <p style={{ marginTop: 10, fontSize: 13, color: '#64748b' }}>
+              <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text-description)' }}>
                 已选择：{ocrImageNames}
               </p>
             )}
@@ -409,12 +409,12 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
       {/* ===== OCR 结果确认弹窗 ===== */}
       <Modal open={ocrResultModalOpen} title="📋 识别结果" onClose={() => setOcrResultModalOpen(false)}>
         {ocrPairs.length === 0 ? (
-          <p style={{ color: '#dc2626', textAlign: 'center', padding: 20 }}>
+          <p style={{ color: 'var(--text-red)', textAlign: 'center', padding: 20 }}>
             未能从图片中识别出有效的单词-中文对应关系，请检查图片质量后重试。
           </p>
         ) : (
           <>
-            <p style={{ color: '#475569', marginBottom: 12 }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
               识别到 <strong>{ocrPairs.length}</strong> 组单词-中文对应关系：
             </p>
             <div style={styles.ocrResultList}>
@@ -426,7 +426,7 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
                 </div>
               ))}
             </div>
-            <p style={{ marginTop: 12, fontSize: 13, color: '#94a3b8' }}>
+            <p style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>
               确认后将全部添加至当前{bookLabel}「{book.title}」。
             </p>
             <div style={styles.formActions}>
@@ -441,7 +441,7 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
 
       {/* ===== JSON 导入弹窗 ===== */}
       <Modal open={jsonImportModalOpen} title="📋 从 JSON 导入" onClose={() => setJsonImportModalOpen(false)}>
-        <p style={{ color: '#475569', marginBottom: 14, lineHeight: 1.6 }}>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.6 }}>
           上传 JSON 文件或在下方粘贴 JSON，系统将提取其中的词条添加到当前{bookLabel}。
           格式：完整词书 <code>{`{title, entries}`}</code> 或纯数组 <code>{`[{english, chinese}]`}</code>。
         </p>
@@ -451,7 +451,7 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
           <span style={styles.fileUploadBtn}>📂 上传 JSON 文件</span>
         </label>
 
-        <div style={{ margin: '12px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>— 或直接粘贴 —</div>
+        <div style={{ margin: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>— 或直接粘贴 —</div>
 
         <textarea
           style={styles.jsonTextarea}
@@ -465,12 +465,12 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
         />
 
         {jsonParseError && (
-          <p style={{ color: '#dc2626', fontSize: 14, marginTop: 8 }}>⚠ {jsonParseError}</p>
+          <p style={{ color: 'var(--text-red)', fontSize: 14, marginTop: 8 }}>⚠ {jsonParseError}</p>
         )}
 
         {jsonParsedEntries.length > 0 && (
           <div style={{ marginTop: 12 }}>
-            <p style={{ color: '#475569', marginBottom: 8 }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
               解析到 <strong>{jsonParsedEntries.length}</strong> 条{entryLabel}：
             </p>
             <div style={styles.ocrResultList}>
@@ -524,27 +524,27 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   opaqueRegion: {
-    background: '#f8fafc',
+    background: 'var(--bg-page)',
     padding: '12px 0 8px 0',
   },
   headerCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--bg-card)',
     borderRadius: 12,
     padding: '14px 18px',
-    border: '1px solid #e2e8f0',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    border: '1px solid var(--border-default)',
+    boxShadow: 'var(--shadow-header)',
   },
   /* 顶部栏 */
   topBar: {
     display: 'flex', alignItems: 'center', gap: 12,
-    padding: '0 0 12px 0', borderBottom: '1px solid #e2e8f0', marginBottom: 16,
+    padding: '0 0 12px 0', borderBottom: '1px solid var(--border-default)', marginBottom: 16,
   },
   backBtn: {
-    padding: '6px 14px', fontSize: 14, backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', color: '#475569',
+    padding: '6px 14px', fontSize: 14, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
   },
-  bookTitle: { fontSize: 24, fontWeight: 700, color: '#1e293b', flex: 1, margin: 0 },
-  badge: { fontSize: 14, color: '#64748b', backgroundColor: '#f1f5f9', padding: '4px 12px', borderRadius: 12 },
+  bookTitle: { fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', flex: 1, margin: 0 },
+  badge: { fontSize: 14, color: 'var(--text-description)', backgroundColor: 'var(--bg-hover)', padding: '4px 12px', borderRadius: 12 },
 
   /* 操作栏 */
   actionBar: {
@@ -557,23 +557,23 @@ const styles: Record<string, React.CSSProperties> = {
   },
   primaryBtn: {
     padding: '10px 20px', fontSize: 15, fontWeight: 600,
-    backgroundColor: '#059669', color: '#ffffff', border: 'none', borderRadius: 8, cursor: 'pointer',
+    backgroundColor: 'var(--bg-primary)', color: 'var(--text-on-primary)', border: 'none', borderRadius: 8, cursor: 'pointer',
   },
   outlineBtn: {
     padding: '10px 20px', fontSize: 15,
-    backgroundColor: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', borderRadius: 8, cursor: 'pointer',
+    backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border-strong)', borderRadius: 8, cursor: 'pointer',
   },
   dangerBtn: {
     padding: '10px 20px', fontSize: 15,
-    backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 8, cursor: 'pointer',
+    backgroundColor: 'var(--bg-warning)', color: 'var(--text-red)', border: '1px solid var(--border-red)', borderRadius: 8, cursor: 'pointer',
   },
   ocrBtn: {
     padding: '10px 20px', fontSize: 15,
-    backgroundColor: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: 8, cursor: 'pointer',
+    backgroundColor: 'var(--bg-ocr)', color: 'var(--text-ocr)', border: '1px solid var(--border-ocr)', borderRadius: 8, cursor: 'pointer',
   },
   jsonBtn: {
     padding: '10px 20px', fontSize: 15,
-    backgroundColor: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', borderRadius: 8, cursor: 'pointer',
+    backgroundColor: 'var(--bg-json)', color: 'var(--text-json)', border: '1px solid var(--border-json)', borderRadius: 8, cursor: 'pointer',
   },
 
   /* 卡片容器（略宽于标题，圆角矩形；填充剩余高度，内部滚动） */
@@ -582,10 +582,10 @@ const styles: Record<string, React.CSSProperties> = {
     marginRight: -16,
     marginBottom: 16,
     padding: '16px 16px 8px',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--bg-card)',
     borderRadius: 16,
-    border: '1px solid #e2e8f0',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    border: '1px solid var(--border-default)',
+    boxShadow: 'var(--shadow-header)',
     flex: 1,
     overflowY: 'auto',
   },
@@ -596,75 +596,75 @@ const styles: Record<string, React.CSSProperties> = {
   },
   entryCard: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#ffffff', borderRadius: 12, padding: '14px 18px',
-    border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    backgroundColor: 'var(--bg-card)', borderRadius: 12, padding: '14px 18px',
+    border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)',
   },
   entryContent: { display: 'flex', flexDirection: 'column', gap: 4 },
-  entryEn: { fontSize: 17, fontWeight: 600, color: '#1e293b' },
-  entryZh: { fontSize: 14, color: '#64748b' },
+  entryEn: { fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' },
+  entryZh: { fontSize: 14, color: 'var(--text-description)' },
   entryActions: { display: 'flex', gap: 6 },
   smallBtn: {
-    padding: '4px 10px', fontSize: 15, backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer',
+    padding: '4px 10px', fontSize: 15, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer',
   },
   smallDangerBtn: {
-    padding: '4px 10px', fontSize: 15, backgroundColor: '#fef2f2',
-    border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer',
+    padding: '4px 10px', fontSize: 15, backgroundColor: 'var(--bg-danger)',
+    border: '1px solid var(--border-red)', borderRadius: 6, cursor: 'pointer',
   },
-  empty: { textAlign: 'center', color: '#94a3b8', padding: 40 },
+  empty: { textAlign: 'center', color: 'var(--text-muted)', padding: 40 },
 
   /* 表单 */
   formGroup: { marginBottom: 14 },
-  label: { display: 'block', fontSize: 14, fontWeight: 600, color: '#475569', marginBottom: 6 },
+  label: { display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 },
   input: {
     width: '100%', padding: '10px 12px', fontSize: 15,
-    border: '1px solid #cbd5e1', borderRadius: 8, boxSizing: 'border-box',
+    border: '1px solid var(--border-strong)', borderRadius: 8, boxSizing: 'border-box',
   },
   formActions: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
   cancelBtn: {
-    padding: '8px 20px', fontSize: 15, backgroundColor: '#f1f5f9',
-    border: '1px solid #e2e8f0', borderRadius: 6, cursor: 'pointer', color: '#475569',
+    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
   },
   confirmBtn: {
-    padding: '8px 20px', fontSize: 15, backgroundColor: '#059669',
-    color: '#ffffff', border: 'none', borderRadius: 6, cursor: 'pointer',
+    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-primary)',
+    color: 'var(--text-on-primary)', border: 'none', borderRadius: 6, cursor: 'pointer',
   },
 
   /* OCR */
   ocrLoading: {
-    textAlign: 'center', padding: '40px 20px', color: '#475569',
+    textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)',
   },
   spinner: {
-    width: 40, height: 40, border: '4px solid #e2e8f0',
-    borderTopColor: '#059669', borderRadius: '50%',
+    width: 40, height: 40, border: '4px solid var(--border-default)',
+    borderTopColor: 'var(--border-green)', borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
     margin: '0 auto 16px',
   },
   fileUploadLabel: { cursor: 'pointer' },
   fileUploadBtn: {
     display: 'inline-block', padding: '10px 24px', fontSize: 15,
-    backgroundColor: '#1e293b', color: '#ffffff', border: 'none', borderRadius: 8, cursor: 'pointer',
+    backgroundColor: 'var(--bg-primary)', color: 'var(--text-on-primary)', border: 'none', borderRadius: 8, cursor: 'pointer',
   },
   jsonTextarea: {
     width: '100%', padding: '10px 12px', fontSize: 13, fontFamily: 'monospace',
-    border: '1px solid #cbd5e1', borderRadius: 8, resize: 'vertical',
+    border: '1px solid var(--border-strong)', borderRadius: 8, resize: 'vertical',
     boxSizing: 'border-box', lineHeight: 1.5,
   },
   parseBtn: {
-    padding: '8px 20px', fontSize: 15, backgroundColor: '#f1f5f9',
-    border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer', color: '#475569',
+    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-strong)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
   },
   ocrResultList: {
     maxHeight: 300, overflowY: 'auto',
     display: 'flex', flexDirection: 'column', gap: 6,
-    backgroundColor: '#f8fafc', borderRadius: 8, padding: 12,
+    backgroundColor: 'var(--bg-page)', borderRadius: 8, padding: 12,
   },
   ocrResultItem: {
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '6px 8px', borderRadius: 6,
-    backgroundColor: '#ffffff', border: '1px solid #e2e8f0',
+    backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-default)',
   },
-  ocrResultEn: { fontWeight: 600, color: '#1e293b', fontSize: 15 },
-  ocrResultDivider: { color: '#94a3b8', fontSize: 14 },
-  ocrResultZh: { color: '#64748b', fontSize: 14 },
+  ocrResultEn: { fontWeight: 600, color: 'var(--text-primary)', fontSize: 15 },
+  ocrResultDivider: { color: 'var(--text-muted)', fontSize: 14 },
+  ocrResultZh: { color: 'var(--text-description)', fontSize: 14 },
 };

@@ -66,23 +66,23 @@ export const ImportExportPage: React.FC<Props> = ({ onDataChanged }) => {
 
 const styles: Record<string, React.CSSProperties> = {
   container: { maxWidth: 800, margin: '0 auto', padding: '24px 16px' },
-  title: { textAlign: 'center', color: '#1e293b', marginBottom: 24 },
+  title: { textAlign: 'center', color: 'var(--text-primary)', marginBottom: 24 },
   section: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--bg-card)',
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    border: '1px solid #e2e8f0',
+    boxShadow: 'var(--shadow-card)',
+    border: '1px solid var(--border-default)',
   },
-  sectionTitle: { margin: '0 0 12px 0', color: '#334155', fontSize: 18 },
+  sectionTitle: { margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: 18 },
   item: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '8px 0',
-    borderBottom: '1px solid #f1f5f9',
+    borderBottom: '1px solid var(--border-default)',
     gap: 12,
   },
-  empty: { textAlign: 'center', color: '#94a3b8', padding: 40, fontSize: 15 },
+  empty: { textAlign: 'center', color: 'var(--text-muted)', padding: 40, fontSize: 15 },
 };

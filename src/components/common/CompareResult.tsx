@@ -25,7 +25,7 @@ export const CompareResult: React.FC<CompareResultProps> = ({ blanks, onBack }) 
           <div key={blank.id} style={styles.item}>
             <div style={styles.itemHeader}>
               <span style={styles.itemLabel}>#{idx + 1}</span>
-              <span style={{ ...styles.itemBadge, backgroundColor: blank.correctFlag ? '#dcfce7' : '#fecaca', color: blank.correctFlag ? '#16a34a' : '#dc2626' }}>
+              <span style={{ ...styles.itemBadge, backgroundColor: blank.correctFlag ? 'var(--bg-success)' : 'var(--bg-danger)', color: blank.correctFlag ? 'var(--text-green-dark)' : 'var(--text-red)' }}>
                 {blank.correctFlag ? '✅ 正确' : '❌ 有误'}
               </span>
             </div>
@@ -59,7 +59,7 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     textAlign: 'center',
     marginBottom: 20,
-    color: '#1e293b',
+    color: 'var(--text-primary)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -68,8 +68,8 @@ const styles: Record<string, React.CSSProperties> = {
   summaryTag: {
     fontSize: 16,
     fontWeight: 600,
-    color: '#64748b',
-    backgroundColor: '#f1f5f9',
+    color: 'var(--text-description)',
+    backgroundColor: 'var(--bg-hover)',
     padding: '4px 14px',
     borderRadius: 12,
   },
@@ -80,11 +80,11 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 24,
   },
   item: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--bg-card)',
     borderRadius: 10,
     padding: 16,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    border: '1px solid #e2e8f0',
+    boxShadow: 'var(--shadow-card)',
+    border: '1px solid var(--border-default)',
   },
   itemHeader: {
     display: 'flex',
@@ -94,7 +94,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   itemLabel: {
     fontWeight: 600,
-    color: '#475569',
+    color: 'var(--text-secondary)',
   },
   itemBadge: {
     padding: '2px 10px',
@@ -108,19 +108,19 @@ const styles: Record<string, React.CSSProperties> = {
   },
   fieldLabel: {
     fontWeight: 600,
-    color: '#64748b',
+    color: 'var(--text-description)',
     marginRight: 6,
   },
   fieldValue: {
-    color: '#1e293b',
+    color: 'var(--text-primary)',
   },
   backBtn: {
     display: 'block',
     margin: '0 auto',
     padding: '12px 32px',
     fontSize: 16,
-    backgroundColor: '#1e293b',
-    color: '#ffffff',
+    backgroundColor: 'var(--bg-hover)',
+    color: 'var(--text-secondary)',
     border: 'none',
     borderRadius: 8,
     cursor: 'pointer',
