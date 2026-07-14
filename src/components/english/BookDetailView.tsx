@@ -7,6 +7,7 @@ import {
 } from '../../utils/storage';
 import { Modal } from '../common/Modal';
 import { SingleExportBtn } from '../common/JsonImportExport';
+import { useLayoutSettings } from '../common/LayoutContext';
 import { recognizeImages, type OcrPair } from '../../utils/ocr';
 
 /* ==================== 统一条目类型 ==================== */
@@ -39,23 +40,35 @@ interface Props {
   bookType: BookType;
   onBack: () => void;
   onDataChange: () => void;
+  /** Select mode props (for English memory selection) */
+  selectMode?: boolean;
+  selectedEntryIds?: Set<string>;
+  onToggleEntry?: (entryId: string) => void;
+  onSelectRange?: (entryId: string) => void;
 }
 
 /* ==================== 组件 ==================== */
 
-export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, onBack, onDataChange }) => {
+export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, onBack, onDataChange, selectMode = false, selectedEntryIds, onToggleEntry, onSelectRange }) => {
   const [book, setBook] = useState<WordBook | SentenceBook>(initialBook);
   const [entries, setEntries] = useState<EntryItem[]>(() =>
     'entries' in initialBook ? initialBook.entries.map(e => ({ id: e.id, english: e.english, chinese: e.chinese })) : []
   );
+  const { expandOnHoverExit } = useLayoutSettings();
+
+  // Expanded word tracking
+  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
+  const [expandedPos, setExpandedPos] = useState<{ top: number; left: number; right?: number; maxWidth: number } | null>(null);
+  const [editEn, setEditEn] = useState('');
+  const [editZh, setEditZh] = useState('');
 
   // Modal 状态
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<EntryItem | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // OCR 导入状态
+  // OCR 导入状态（保留业务逻辑，UI 已隐藏）
   const [ocrModalOpen, setOcrModalOpen] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrResultModalOpen, setOcrResultModalOpen] = useState(false);
@@ -71,12 +84,27 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
   // 表单状态
   const [newEn, setNewEn] = useState('');
   const [newZh, setNewZh] = useState('');
-  const [editEn, setEditEn] = useState('');
-  const [editZh, setEditZh] = useState('');
   const [renameTitle, setRenameTitle] = useState('');
+
+  const expandedRef = useRef<HTMLDivElement>(null);
 
   const bookLabel = bookType === 'word' ? '词书' : '句书';
   const entryLabel = bookType === 'word' ? '词' : '句';
+
+  /** Click outside handler for expanded entry */
+  useEffect(() => {
+    if (!expandedEntryId) return;
+    if (expandOnHoverExit === 'click-outside') {
+      const handler = (e: MouseEvent) => {
+        if (expandedRef.current && !expandedRef.current.contains(e.target as Node)) {
+          setExpandedEntryId(null);
+          setExpandedPos(null);
+        }
+      };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }
+  }, [expandedEntryId, expandOnHoverExit]);
 
   /** 持久化到 storage */
   const persist = useCallback((updated: WordBook | SentenceBook) => {
@@ -121,12 +149,16 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
 
   /** 删除条目 */
   const handleDeleteEntry = (entryId: string) => {
-    if (!confirm(`确定删除该${entryLabel}？`)) return;
+    const entry = entries.find(e => e.id === entryId);
+    if (!entry) return;
+    if (!confirm(`确定删除该${entryLabel}「${entry.english}」？`)) return;
     const updated = {
       ...book,
       entries: ('entries' in book ? book.entries : []).filter(e => e.id !== entryId),
     };
     persist(updated);
+    setExpandedEntryId(null);
+    setExpandedPos(null);
     onDataChange();
   };
 
@@ -142,12 +174,60 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     onBack();
   };
 
-  /** 重命名 */
-  const handleRename = () => {
-    if (!renameTitle.trim()) { alert('名称不能为空'); return; }
-    const updated = { ...book, title: renameTitle.trim() };
+  /** 展开/折叠词条 */
+  const handleEntryClick = (entry: EntryItem, e: React.MouseEvent) => {
+    if (expandedEntryId === entry.id) {
+      setExpandedEntryId(null);
+      setExpandedPos(null);
+    } else {
+      setExpandedEntryId(entry.id);
+      setEditEn(entry.english);
+      setEditZh(entry.chinese);
+
+      // Compute viewport-relative position for the expanded card
+      const target = e.currentTarget as HTMLElement;
+      const rect = target.getBoundingClientRect();
+      const gap = 4;
+      const estWidth = Math.max(rect.width + 20, Math.min(340, Math.max(rect.width * 2, 220)));
+      const viewportW = window.innerWidth;
+      const viewportH = window.innerHeight;
+
+      // Always cover the original word's position
+      let left = rect.left;
+      let top = rect.top;
+      let popupWidth = estWidth;
+
+      // Adjust left if overflowing right edge
+      if (left + popupWidth > viewportW - gap) {
+        left = Math.max(gap, viewportW - popupWidth - gap);
+      }
+      // Adjust top if overflowing bottom edge
+      if (top + 260 > viewportH) {
+        top = Math.max(gap, viewportH - 260);
+      }
+      // Ensure the popup still covers the original rect horizontally
+      if (left + popupWidth < rect.left + rect.width) {
+        popupWidth = rect.left + rect.width - left + gap * 2;
+      }
+      if (left > rect.left) {
+        left = Math.max(0, rect.left - gap);
+        popupWidth = Math.max(popupWidth, rect.width + gap * 2);
+      }
+
+      setExpandedPos({ top, left, maxWidth: estWidth });
+    }
+  };
+
+  /** 保存展开条目的编辑 */
+  const handleSaveExpanded = () => {
+    if (!expandedEntryId || !editEn.trim() || !editZh.trim()) return;
+    const updated = {
+      ...book,
+      entries: ('entries' in book ? book.entries : []).map(e =>
+        e.id === expandedEntryId ? { ...e, english: editEn.trim(), chinese: editZh.trim() } : e
+      ),
+    };
     persist(updated);
-    setRenameModalOpen(false);
     onDataChange();
   };
 
@@ -164,16 +244,9 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     setEditModalOpen(true);
   };
 
-  /** 打开重命名弹窗 */
-  const openRename = () => {
-    setRenameTitle(book.title);
-    setRenameModalOpen(true);
-  };
-
   const isWordBook = bookType === 'word';
 
   /* ===== JSON 导入 ===== */
-
   const openJsonImport = () => {
     setJsonRawText('');
     setJsonParsedEntries([]);
@@ -192,59 +265,28 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
   const parseJsonEntries = () => {
     setJsonParseError('');
     setJsonParsedEntries([]);
-
     let data: unknown;
-    try {
-      data = JSON.parse(jsonRawText);
-    } catch {
-      setJsonParseError('JSON 格式解析失败，请检查语法。');
-      return;
-    }
-
+    try { data = JSON.parse(jsonRawText); }
+    catch { setJsonParseError('JSON 格式解析失败，请检查语法。'); return; }
     let entries: { english: string; chinese: string }[] = [];
-
     if (Array.isArray(data)) {
-      // 纯数组格式 [{english, chinese}]
-      entries = data
-        .filter((item: any) => item && (item.english || item.en) && (item.chinese || item.zh || item.meaning))
-        .map((item: any) => ({
-          english: (item.english || item.en || '').trim(),
-          chinese: (item.chinese || item.zh || item.meaning || '').trim(),
-        }));
+      entries = data.filter((item: any) => item && (item.english || item.en) && (item.chinese || item.zh || item.meaning))
+        .map((item: any) => ({ english: (item.english || item.en || '').trim(), chinese: (item.chinese || item.zh || item.meaning || '').trim() }));
     } else if (data && typeof data === 'object') {
       const obj = data as Record<string, any>;
       if (obj.entries && Array.isArray(obj.entries)) {
-        // 完整词书/句书格式 {title, entries}
-        entries = obj.entries
-          .filter((item: any) => item && (item.english || item.en) && (item.chinese || item.zh || item.meaning))
-          .map((item: any) => ({
-            english: (item.english || item.en || '').trim(),
-            chinese: (item.chinese || item.zh || item.meaning || '').trim(),
-          }));
-      } else {
-        setJsonParseError('JSON 中未找到有效的 entries 数组。');
-        return;
-      }
-    } else {
-      setJsonParseError('无法识别的 JSON 格式。');
-      return;
-    }
-
-    if (entries.length === 0) {
-      setJsonParseError('未能从 JSON 中提取出有效的词条。');
-      return;
-    }
-
+        entries = obj.entries.filter((item: any) => item && (item.english || item.en) && (item.chinese || item.zh || item.meaning))
+          .map((item: any) => ({ english: (item.english || item.en || '').trim(), chinese: (item.chinese || item.zh || item.meaning || '').trim() }));
+      } else { setJsonParseError('JSON 中未找到有效的 entries 数组。'); return; }
+    } else { setJsonParseError('无法识别的 JSON 格式。'); return; }
+    if (entries.length === 0) { setJsonParseError('未能从 JSON 中提取出有效的词条。'); return; }
     setJsonParsedEntries(entries);
   };
 
   const handleJsonImportConfirm = () => {
     if (jsonParsedEntries.length === 0) return;
     const newEntries = jsonParsedEntries.map(p => ({ id: uid(), english: p.english, chinese: p.chinese }));
-    const updated = {
-      ...book,
-      entries: [...('entries' in book ? book.entries : []), ...newEntries],
-    };
+    const updated = { ...book, entries: [...('entries' in book ? book.entries : []), ...newEntries] };
     persist(updated);
     setJsonImportModalOpen(false);
     setJsonRawText('');
@@ -252,21 +294,14 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     onDataChange();
   };
 
-  /* ===== OCR 导入 ===== */
-
-  const openOcrUpload = () => {
-    setOcrModalOpen(true);
-    setOcrImageNames('');
-  };
-
+  /* ===== OCR 导入（保留业务逻辑） ===== */
+  const openOcrUpload = () => { setOcrModalOpen(true); setOcrImageNames(''); };
   const handleOcrFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
     const fileList = Array.from(files);
     setOcrImageNames(fileList.map(f => f.name).join('、'));
     setOcrLoading(true);
-
     try {
       const result = await recognizeImages(fileList);
       setOcrPairs(result.pairs);
@@ -278,14 +313,10 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
       alert(`OCR 识别失败: ${err instanceof Error ? err.message : '未知错误'}`);
     }
   };
-
   const handleOcrConfirm = () => {
     if (ocrPairs.length === 0) return;
     const newEntries = ocrPairs.map(p => ({ id: uid(), english: p.english, chinese: p.chinese }));
-    const updated = {
-      ...book,
-      entries: [...('entries' in book ? book.entries : []), ...newEntries],
-    };
+    const updated = { ...book, entries: [...('entries' in book ? book.entries : []), ...newEntries] };
     persist(updated);
     setOcrResultModalOpen(false);
     setOcrPairs([]);
@@ -294,48 +325,151 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
 
   return (
     <div style={styles.page}>
-      <div style={styles.stickyHeader}>
-        <div style={styles.opaqueRegion}>
-          <div style={styles.headerCard}>
-            <div style={styles.topBar}>
-              <button style={styles.backBtn} onClick={onBack}>← 返回</button>
-              <h1 style={styles.bookTitle}>{book.title}</h1>
-              <span style={styles.badge}>{isWordBook ? '📗 词书' : '📘 句书'}</span>
-            </div>
-            <div style={styles.actionBar}>
-              <button style={styles.primaryBtn} onClick={() => { setNewEn(''); setNewZh(''); setAddModalOpen(true); }}>
-                ＋ 添加{entryLabel}
-              </button>
-              <button style={styles.outlineBtn} onClick={handleExport}>⬇️ 导出</button>
-              <button style={styles.outlineBtn} onClick={openRename}>✏️ 重命名</button>
-              <button style={styles.ocrBtn} onClick={openOcrUpload}>📷 从图片导入</button>
-              <button style={styles.jsonBtn} onClick={openJsonImport}>📋 从 JSON 导入</button>
-              <button style={styles.dangerBtn} onClick={handleDeleteBook}>🗑️ 删除</button>
-            </div>
-          </div>
+      {/* Header row: back + title + buttons */}
+      <div style={styles.headerRow}>
+        <div style={styles.headerLeft}>
+          <button style={styles.backBtn} onClick={onBack}>← 返回</button>
+          <h1 style={styles.title}>{book.title}</h1>
+          <span style={styles.badge}>{isWordBook ? '📗 词书' : '📘 句书'}</span>
+        </div>
+        <div style={styles.headerRight}>
+          <button style={styles.addBtn} onClick={() => { setNewEn(''); setNewZh(''); setAddModalOpen(true); }}>
+            ＋ 添加{entryLabel}
+          </button>
+          <SingleExportBtn label={book.title} data={book} filename={`${book.title}.json`} />
+          <button style={styles.jsonImportBtn} onClick={openJsonImport}>📋 从 JSON 导入</button>
+          <button style={styles.dangerBtn} onClick={handleDeleteBook}>🗑️ 删除</button>
         </div>
       </div>
 
-      {/* 条目列表容器 */}
-      <div style={styles.cardContainer}>
-        <div style={styles.cardGrid}>
-          {entries.map(entry => (
-          <div key={entry.id} style={styles.entryCard}>
-            <div style={styles.entryContent}>
-              <div style={styles.entryEn}>{entry.english}</div>
-              <div style={styles.entryZh}>{entry.chinese}</div>
-            </div>
-            <div style={styles.entryActions}>
-              <button style={styles.smallBtn} onClick={() => openEdit(entry)}>✏️</button>
-              <button style={styles.smallDangerBtn} onClick={() => handleDeleteEntry(entry.id)}>🗑️</button>
-            </div>
-          </div>
-        ))}
+      {/* Separator */}
+      <div style={styles.separator} />
+
+      {/* Entries container */}
+      <div style={styles.entriesContainer}>
         {entries.length === 0 && (
           <p style={styles.empty}>暂无{entryLabel}，点击上方"添加{entryLabel}"开始添加。</p>
         )}
+        <div style={styles.entriesWrap}>
+          {entries.map(entry => {
+            const isExpanded = expandedEntryId === entry.id;
+            const isSelected = selectMode ? selectedEntryIds?.has(entry.id) : false;
+
+            if (selectMode) {
+              // Select mode: no expansion, just click to select
+              return (
+                <div
+                  key={entry.id}
+                  style={{
+                    ...styles.entryChip,
+                    ...(isSelected ? styles.entryChipSelected : {}),
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    if (onToggleEntry && onSelectRange) {
+                      // Use range selection for shift+click
+                      // We need to detect shift key — use a custom handler
+                      onToggleEntry(entry.id);
+                    }
+                  }}
+                  onMouseDown={(e) => {
+                    if (e.shiftKey && onSelectRange) {
+                      e.preventDefault();
+                      onSelectRange(entry.id);
+                    }
+                  }}
+                >
+                  <span style={styles.entryEn}>{entry.english}</span>
+                  {isSelected && <span style={{ marginLeft: 6, color: 'var(--text-green)' }}>✓</span>}
+                </div>
+              );
+            }
+
+            // Normal mode with expand-on-click
+            return (
+              <div
+                key={entry.id}
+                style={styles.entryWrapper}
+              >
+                {/* Collapsed chip (always rendered to preserve flex slot) */}
+                <div
+                  style={{
+                    ...styles.entryChip,
+                    visibility: isExpanded ? 'hidden' : 'visible',
+                  }}
+                  onClick={(e) => !isExpanded && handleEntryClick(entry, e)}
+                >
+                  <span style={styles.entryEn}>{entry.english}</span>
+                </div>
+
+                {/* Expanded content — positioned fixed relative to viewport */}
+                {isExpanded && expandedPos && (
+                  <div
+                    ref={expandedRef}
+                    style={{
+                      position: 'fixed' as const,
+                      top: expandedPos.top,
+                      left: expandedPos.left,
+                      maxWidth: expandedPos.maxWidth,
+                      zIndex: 20,
+                      padding: 12,
+                      backgroundColor: 'var(--bg-card)',
+                      border: '1px solid var(--border-strong)',
+                      borderRadius: 8,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+                    }}
+                    onMouseLeave={() => {
+                      if (expandOnHoverExit === 'mouseleave') {
+                        setExpandedEntryId(null);
+                        setExpandedPos(null);
+                      }
+                    }}
+                  >
+                    <div style={styles.expandedContent}>
+                      <div style={styles.expandedFields}>
+                        <div style={styles.fieldRow}>
+                          <label style={styles.fieldLabel}>英文</label>
+                          <input
+                            style={styles.fieldInput}
+                            value={editEn}
+                            onChange={e => setEditEn(e.target.value)}
+                            onBlur={handleSaveExpanded}
+                            onClick={e => e.stopPropagation()}
+                          />
+                        </div>
+                        <div style={styles.fieldRow}>
+                          <label style={styles.fieldLabel}>中文</label>
+                          <input
+                            style={styles.fieldInput}
+                            value={editZh}
+                            onChange={e => setEditZh(e.target.value)}
+                            onBlur={handleSaveExpanded}
+                            onClick={e => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div style={styles.expandedActions}>
+                        <button
+                          style={styles.smallDangerBtn}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEntry(entry.id);
+                          }}
+                          title="删除"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-      </div>
+
+      {/* ===== 添加弹窗 ===== */}
       <Modal open={addModalOpen} title={`添加${entryLabel}`} onClose={() => setAddModalOpen(false)}>
         <div style={styles.formGroup}>
           <label style={styles.label}>英文</label>
@@ -355,124 +489,23 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
         </div>
       </Modal>
 
-      {/* ===== 编辑弹窗 ===== */}
-      <Modal open={editModalOpen} title={`编辑${entryLabel}`} onClose={() => setEditModalOpen(false)}>
-        <div style={styles.formGroup}>
-          <label style={styles.label}>英文</label>
-          <input style={styles.input} value={editEn} onChange={e => setEditEn(e.target.value)}
-            autoFocus onKeyDown={e => e.key === 'Enter' && handleEdit()} />
-        </div>
-        <div style={styles.formGroup}>
-          <label style={styles.label}>中文</label>
-          <input style={styles.input} value={editZh} onChange={e => setEditZh(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleEdit()} />
-        </div>
-        <div style={styles.formActions}>
-          <button style={styles.cancelBtn} onClick={() => setEditModalOpen(false)}>取消</button>
-          <button style={styles.confirmBtn} onClick={handleEdit}>确认修改</button>
-        </div>
-      </Modal>
-
-      {/* ===== OCR 上传弹窗 ===== */}
-      <Modal open={ocrModalOpen} title="📷 从图片导入" onClose={() => setOcrModalOpen(false)}>
-        {ocrLoading ? (
-          <div style={styles.ocrLoading}>
-            <div style={styles.spinner}></div>
-            <p>正在识别图片中的文字，请稍候…</p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>首次使用会下载语言包，可能需要额外时间</p>
-          </div>
-        ) : (
-          <>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
-              选择包含单词和中文释义的图片，系统将自动识别并提取其中的内容。
-              支持 .png、.jpg、.jpeg 格式，可多选。
-            </p>
-            <label style={styles.fileUploadLabel}>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/jpg"
-                multiple
-                style={{ display: 'none' }}
-                onChange={handleOcrFiles}
-              />
-              <span style={styles.fileUploadBtn}>📂 选择图片</span>
-            </label>
-            {ocrImageNames && (
-              <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text-description)' }}>
-                已选择：{ocrImageNames}
-              </p>
-            )}
-          </>
-        )}
-      </Modal>
-
-      {/* ===== OCR 结果确认弹窗 ===== */}
-      <Modal open={ocrResultModalOpen} title="📋 识别结果" onClose={() => setOcrResultModalOpen(false)}>
-        {ocrPairs.length === 0 ? (
-          <p style={{ color: 'var(--text-red)', textAlign: 'center', padding: 20 }}>
-            未能从图片中识别出有效的单词-中文对应关系，请检查图片质量后重试。
-          </p>
-        ) : (
-          <>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>
-              识别到 <strong>{ocrPairs.length}</strong> 组单词-中文对应关系：
-            </p>
-            <div style={styles.ocrResultList}>
-              {ocrPairs.map((pair, idx) => (
-                <div key={idx} style={styles.ocrResultItem}>
-                  <span style={styles.ocrResultEn}>{pair.english}</span>
-                  <span style={styles.ocrResultDivider}>—</span>
-                  <span style={styles.ocrResultZh}>{pair.chinese}</span>
-                </div>
-              ))}
-            </div>
-            <p style={{ marginTop: 12, fontSize: 13, color: 'var(--text-muted)' }}>
-              确认后将全部添加至当前{bookLabel}「{book.title}」。
-            </p>
-            <div style={styles.formActions}>
-              <button style={styles.cancelBtn} onClick={() => setOcrResultModalOpen(false)}>取消</button>
-              <button style={styles.confirmBtn} onClick={handleOcrConfirm}>
-                确认导入 {ocrPairs.length} 项
-              </button>
-            </div>
-          </>
-        )}
-      </Modal>
-
       {/* ===== JSON 导入弹窗 ===== */}
       <Modal open={jsonImportModalOpen} title="📋 从 JSON 导入" onClose={() => setJsonImportModalOpen(false)}>
         <p style={{ color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.6 }}>
           上传 JSON 文件或在下方粘贴 JSON，系统将提取其中的词条添加到当前{bookLabel}。
-          格式：完整词书 <code>{`{title, entries}`}</code> 或纯数组 <code>{`[{english, chinese}]`}</code>。
         </p>
-
         <label style={styles.fileUploadLabel}>
           <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleJsonFile} />
           <span style={styles.fileUploadBtn}>📂 上传 JSON 文件</span>
         </label>
-
         <div style={{ margin: '12px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>— 或直接粘贴 —</div>
-
-        <textarea
-          style={styles.jsonTextarea}
-          rows={8}
-          placeholder='[
-  {"english": "example", "chinese": "例子"},
-  {"english": "hello", "chinese": "你好"}
-]'
-          value={jsonRawText}
-          onChange={e => setJsonRawText(e.target.value)}
-        />
-
-        {jsonParseError && (
-          <p style={{ color: 'var(--text-red)', fontSize: 14, marginTop: 8 }}>⚠ {jsonParseError}</p>
-        )}
-
+        <textarea style={styles.jsonTextarea} rows={8}
+          placeholder='[{"english": "example", "chinese": "例子"}]'
+          value={jsonRawText} onChange={e => setJsonRawText(e.target.value)} />
+        {jsonParseError && <p style={{ color: 'var(--text-red)', fontSize: 14, marginTop: 8 }}>⚠ {jsonParseError}</p>}
         {jsonParsedEntries.length > 0 && (
           <div style={{ marginTop: 12 }}>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
-              解析到 <strong>{jsonParsedEntries.length}</strong> 条{entryLabel}：
-            </p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>解析到 <strong>{jsonParsedEntries.length}</strong> 条{entryLabel}：</p>
             <div style={styles.ocrResultList}>
               {jsonParsedEntries.map((p, i) => (
                 <div key={i} style={styles.ocrResultItem}>
@@ -484,33 +517,55 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
             </div>
           </div>
         )}
-
         <div style={styles.formActions}>
           <button style={styles.cancelBtn} onClick={() => setJsonImportModalOpen(false)}>取消</button>
-          <button style={styles.parseBtn} onClick={parseJsonEntries} disabled={!jsonRawText.trim()}>
-            🔍 解析并预览
-          </button>
-          <button
-            style={styles.confirmBtn}
-            onClick={handleJsonImportConfirm}
-            disabled={jsonParsedEntries.length === 0}
-          >
+          <button style={styles.parseBtn} onClick={parseJsonEntries} disabled={!jsonRawText.trim()}>🔍 解析并预览</button>
+          <button style={styles.confirmBtn} onClick={handleJsonImportConfirm} disabled={jsonParsedEntries.length === 0}>
             确认导入 {jsonParsedEntries.length > 0 ? `(${jsonParsedEntries.length} 项)` : ''}
           </button>
         </div>
       </Modal>
 
-      {/* ===== 重命名弹窗 ===== */}
-      <Modal open={renameModalOpen} title={`重命名${bookLabel}`} onClose={() => setRenameModalOpen(false)}>
-        <div style={styles.formGroup}>
-          <label style={styles.label}>名称</label>
-          <input style={styles.input} value={renameTitle} onChange={e => setRenameTitle(e.target.value)}
-            autoFocus onKeyDown={e => e.key === 'Enter' && handleRename()} />
-        </div>
-        <div style={styles.formActions}>
-          <button style={styles.cancelBtn} onClick={() => setRenameModalOpen(false)}>取消</button>
-          <button style={styles.confirmBtn} onClick={handleRename}>确认重命名</button>
-        </div>
+      {/* ===== OCR 弹窗（保留） ===== */}
+      <Modal open={ocrModalOpen} title="📷 从图片导入" onClose={() => setOcrModalOpen(false)}>
+        {ocrLoading ? (
+          <div style={styles.ocrLoading}>
+            <div style={styles.spinner}></div>
+            <p>正在识别图片中的文字，请稍候…</p>
+          </div>
+        ) : (
+          <>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>选择包含单词和中文释义的图片，系统将自动识别。</p>
+            <label style={styles.fileUploadLabel}>
+              <input type="file" accept="image/png,image/jpeg,image/jpg" multiple style={{ display: 'none' }} onChange={handleOcrFiles} />
+              <span style={styles.fileUploadBtn}>📂 选择图片</span>
+            </label>
+            {ocrImageNames && <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text-description)' }}>已选择：{ocrImageNames}</p>}
+          </>
+        )}
+      </Modal>
+
+      <Modal open={ocrResultModalOpen} title="📋 识别结果" onClose={() => setOcrResultModalOpen(false)}>
+        {ocrPairs.length === 0 ? (
+          <p style={{ color: 'var(--text-red)', textAlign: 'center', padding: 20 }}>未能从图片中识别出有效内容。</p>
+        ) : (
+          <>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>识别到 <strong>{ocrPairs.length}</strong> 组对应关系：</p>
+            <div style={styles.ocrResultList}>
+              {ocrPairs.map((pair, idx) => (
+                <div key={idx} style={styles.ocrResultItem}>
+                  <span style={styles.ocrResultEn}>{pair.english}</span>
+                  <span style={styles.ocrResultDivider}>—</span>
+                  <span style={styles.ocrResultZh}>{pair.chinese}</span>
+                </div>
+              ))}
+            </div>
+            <div style={styles.formActions}>
+              <button style={styles.cancelBtn} onClick={() => setOcrResultModalOpen(false)}>取消</button>
+              <button style={styles.confirmBtn} onClick={handleOcrConfirm}>确认导入 {ocrPairs.length} 项</button>
+            </div>
+          </>
+        )}
       </Modal>
     </div>
   );
@@ -519,106 +574,163 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
 /* ==================== 样式 ==================== */
 
 const styles: Record<string, React.CSSProperties> = {
-  /* 顶部区域 */
-  stickyHeader: {
+  page: {
+    padding: '24px 28px',
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    overflow: 'hidden',
+    maxHeight: '100%',
+  },
+  headerRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+    flexWrap: 'wrap',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    minWidth: 0,
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
     flexShrink: 0,
-  },
-  opaqueRegion: {
-    background: 'var(--bg-page)',
-    padding: '12px 0 8px 0',
-  },
-  headerCard: {
-    backgroundColor: 'var(--bg-card)',
-    borderRadius: 12,
-    padding: '14px 18px',
-    border: '1px solid var(--border-default)',
-    boxShadow: 'var(--shadow-header)',
-  },
-  /* 顶部栏 */
-  topBar: {
-    display: 'flex', alignItems: 'center', gap: 12,
-    padding: '0 0 12px 0', borderBottom: '1px solid var(--border-default)', marginBottom: 16,
   },
   backBtn: {
     padding: '6px 14px', fontSize: 14, backgroundColor: 'var(--bg-hover)',
     border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
+    whiteSpace: 'nowrap',
   },
-  bookTitle: { fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', flex: 1, margin: 0 },
-  badge: { fontSize: 14, color: 'var(--text-description)', backgroundColor: 'var(--bg-hover)', padding: '4px 12px', borderRadius: 12 },
-
-  /* 操作栏 */
-  actionBar: {
-    display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20,
+  title: {
+    fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0,
+    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
   },
-  page: {
-    maxWidth: 900, margin: '0 auto', padding: '16px',
-    height: 'calc(100vh - 56px)',
-    display: 'flex', flexDirection: 'column',
+  badge: {
+    fontSize: 13, color: 'var(--text-description)', backgroundColor: 'var(--bg-hover)',
+    padding: '3px 10px', borderRadius: 10, whiteSpace: 'nowrap',
   },
-  primaryBtn: {
-    padding: '10px 20px', fontSize: 15, fontWeight: 600,
-    backgroundColor: 'var(--bg-primary)', color: 'var(--text-on-primary)', border: 'none', borderRadius: 8, cursor: 'pointer',
+  addBtn: {
+    padding: '7px 16px', fontSize: 13, fontWeight: 600,
+    backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)',
+    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
-  outlineBtn: {
-    padding: '10px 20px', fontSize: 15,
-    backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border-strong)', borderRadius: 8, cursor: 'pointer',
+  jsonImportBtn: {
+    padding: '7px 16px', fontSize: 13,
+    backgroundColor: 'var(--bg-json)', color: 'var(--text-json)',
+    border: '1px solid var(--border-json)', borderRadius: 6, cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   dangerBtn: {
-    padding: '10px 20px', fontSize: 15,
-    backgroundColor: 'var(--bg-warning)', color: 'var(--text-red)', border: '1px solid var(--border-red)', borderRadius: 8, cursor: 'pointer',
+    padding: '7px 16px', fontSize: 13,
+    backgroundColor: 'var(--bg-danger)', color: 'var(--text-red)',
+    border: '1px solid var(--border-red)', borderRadius: 6, cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
-  ocrBtn: {
-    padding: '10px 20px', fontSize: 15,
-    backgroundColor: 'var(--bg-ocr)', color: 'var(--text-ocr)', border: '1px solid var(--border-ocr)', borderRadius: 8, cursor: 'pointer',
+  separator: {
+    height: 1, backgroundColor: 'var(--border-default)', margin: '16px 0',
   },
-  jsonBtn: {
-    padding: '10px 20px', fontSize: 15,
-    backgroundColor: 'var(--bg-json)', color: 'var(--text-json)', border: '1px solid var(--border-json)', borderRadius: 8, cursor: 'pointer',
-  },
-
-  /* 卡片容器（略宽于标题，圆角矩形；填充剩余高度，内部滚动） */
-  cardContainer: {
-    marginLeft: -16,
-    marginRight: -16,
-    marginBottom: 16,
-    padding: '16px 16px 8px',
-    backgroundColor: 'var(--bg-card)',
-    borderRadius: 16,
-    border: '1px solid var(--border-default)',
-    boxShadow: 'var(--shadow-header)',
+  entriesContainer: {
     flex: 1,
+    backgroundColor: 'var(--bg-page)',
+    borderRadius: 12,
+    border: '1px solid var(--border-default)',
+    padding: 16,
     overflowY: 'auto',
   },
-
-  /* 卡片网格 */
-  cardGrid: {
-    display: 'flex', flexDirection: 'column', gap: 10,
+  entriesWrap: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 8,
+    alignContent: 'flex-start',
   },
-  entryCard: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: 'var(--bg-card)', borderRadius: 12, padding: '14px 18px',
-    border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)',
+  entryChip: {
+    padding: '6px 14px',
+    backgroundColor: 'var(--bg-card)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 8,
+    cursor: 'pointer',
+    display: 'inline-block',
+    transition: 'all 0.15s',
+    boxShadow: 'var(--shadow-card)',
   },
-  entryContent: { display: 'flex', flexDirection: 'column', gap: 4 },
-  entryEn: { fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' },
-  entryZh: { fontSize: 14, color: 'var(--text-description)' },
-  entryActions: { display: 'flex', gap: 6 },
-  smallBtn: {
-    padding: '4px 10px', fontSize: 15, backgroundColor: 'var(--bg-hover)',
-    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer',
+  entryWrapper: {
+    position: 'relative' as const,
+    display: 'inline-block',
+  },
+  entryChipSelected: {
+    backgroundColor: 'var(--bg-success)',
+    borderColor: 'var(--border-green-light)',
+  },
+  entryEn: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    whiteSpace: 'nowrap',
+  },
+  expandedContent: {
+    display: 'flex',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  expandedFields: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  fieldRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    color: 'var(--text-muted)',
+    fontWeight: 500,
+  },
+  fieldInput: {
+    padding: '6px 10px',
+    fontSize: 14,
+    border: 'none',
+    borderBottom: '2px solid var(--border-strong)',
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    color: 'var(--text-primary)',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  expandedActions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    paddingTop: 4,
   },
   smallDangerBtn: {
     padding: '4px 10px', fontSize: 15, backgroundColor: 'var(--bg-danger)',
     border: '1px solid var(--border-red)', borderRadius: 6, cursor: 'pointer',
   },
-  empty: { textAlign: 'center', color: 'var(--text-muted)', padding: 40 },
-
+  empty: {
+    textAlign: 'center', color: 'var(--text-muted)', padding: 40, width: '100%',
+  },
   /* 表单 */
   formGroup: { marginBottom: 14 },
   label: { display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 },
   input: {
     width: '100%', padding: '10px 12px', fontSize: 15,
-    border: '1px solid var(--border-strong)', borderRadius: 8, boxSizing: 'border-box',
+    border: 'none',
+    borderBottom: '2px solid var(--border-strong)',
+    borderRadius: 0,
+    boxSizing: 'border-box',
+    backgroundColor: 'transparent',
   },
   formActions: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
   cancelBtn: {
@@ -626,33 +738,31 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
   },
   confirmBtn: {
-    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-primary)',
-    color: 'var(--text-on-primary)', border: 'none', borderRadius: 6, cursor: 'pointer',
+    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-hover)',
+    color: 'var(--text-secondary)', border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer',
   },
-
-  /* OCR */
-  ocrLoading: {
-    textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)',
-  },
-  spinner: {
-    width: 40, height: 40, border: '4px solid var(--border-default)',
-    borderTopColor: 'var(--border-green)', borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
-    margin: '0 auto 16px',
+  parseBtn: {
+    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-hover)',
+    border: '1px solid var(--border-strong)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
   },
   fileUploadLabel: { cursor: 'pointer' },
   fileUploadBtn: {
     display: 'inline-block', padding: '10px 24px', fontSize: 15,
-    backgroundColor: 'var(--bg-primary)', color: 'var(--text-on-primary)', border: 'none', borderRadius: 8, cursor: 'pointer',
+    backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)',
+    border: '1px solid var(--border-default)', borderRadius: 8, cursor: 'pointer',
   },
   jsonTextarea: {
     width: '100%', padding: '10px 12px', fontSize: 13, fontFamily: 'monospace',
     border: '1px solid var(--border-strong)', borderRadius: 8, resize: 'vertical',
     boxSizing: 'border-box', lineHeight: 1.5,
   },
-  parseBtn: {
-    padding: '8px 20px', fontSize: 15, backgroundColor: 'var(--bg-hover)',
-    border: '1px solid var(--border-strong)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
+  ocrLoading: {
+    textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)',
+  },
+  spinner: {
+    width: 40, height: 40, border: '4px solid var(--border-default)',
+    borderTopColor: 'var(--border-green)', borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite', margin: '0 auto 16px',
   },
   ocrResultList: {
     maxHeight: 300, overflowY: 'auto',

@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import type { Article } from '../../types';
 import { uid } from '../../types';
 import { loadArticles, addArticle, deleteArticle } from '../../utils/storage';
-import { splitIntoSentences } from '../../utils/splitter';
 import { ArticleMemoryView } from './ArticleMemoryView';
 import { ArticleDetailView } from './ArticleDetailView';
 import { Modal } from '../common/Modal';
-import { SingleExportBtn } from '../common/JsonImportExport';
 
 type PageView = 'list' | 'detail' | 'memory';
 
@@ -14,6 +12,8 @@ export const ArticleManager: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [view, setView] = useState<PageView>('list');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hoveredArticleId, setHoveredArticleId] = useState<string | null>(null);
 
   // 创建文章弹窗
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -25,19 +25,20 @@ export const ArticleManager: React.FC = () => {
 
   const refresh = () => setArticles(loadArticles());
 
-  const handleDelete = (id: string) => {
-    if (confirm('确定删除该文章？')) {
+  const filteredArticles = articles.filter(a =>
+    a.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleDelete = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const article = articles.find(a => a.id === id);
+    if (!article) return;
+    if (confirm(`确定删除文章「${article.title}」？`)) {
       deleteArticle(id);
       refresh();
     }
   };
 
-  const handleStartMemory = (article: Article) => {
-    setSelectedArticle(article);
-    setView('memory');
-  };
-
-  /** 创建文章 */
   const handleCreateArticle = () => {
     const title = newArticleTitle.trim() || `未命名文章 ${articles.length + 1}`;
     const article: Article = {
@@ -51,13 +52,6 @@ export const ArticleManager: React.FC = () => {
     setCreateModalOpen(false);
     setNewArticleTitle('');
     refresh();
-    // 跳转到详情页
-    setSelectedArticle(article);
-    setView('detail');
-  };
-
-  /** 编辑按钮 */
-  const handleEdit = (article: Article) => {
     setSelectedArticle(article);
     setView('detail');
   };
@@ -87,6 +81,10 @@ export const ArticleManager: React.FC = () => {
         article={selectedArticle}
         onBack={handleBackToList}
         onDataChange={handleDataChange}
+        onStartMemory={(article) => {
+          setSelectedArticle(article);
+          setView('memory');
+        }}
       />
     );
   }
@@ -104,47 +102,65 @@ export const ArticleManager: React.FC = () => {
   /* ===== 列表页 ===== */
   return (
     <div style={styles.container}>
-      <h2 style={styles.title}>📖 语文记忆</h2>
-
-      {/* 创建按钮 */}
-      <div style={styles.createRow}>
-        <button style={styles.createBtn} onClick={() => { setNewArticleTitle(''); setCreateModalOpen(true); }}>
-          ✏️ 创建文章
-        </button>
+      {/* Header row: title + create button + search */}
+      <div style={styles.headerRow}>
+        <div style={styles.titleGroup}>
+          <span style={styles.titleIcon}>📖</span>
+          <h2 style={styles.title}>文章记忆</h2>
+          <button style={styles.createBtn} onClick={() => { setNewArticleTitle(''); setCreateModalOpen(true); }}>
+            ✏️ 创建文章
+          </button>
+        </div>
+        <input
+          style={styles.searchInput}
+          type="text"
+          placeholder="搜索文章…"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
       </div>
 
-      {/* 文章列表 */}
-      <div style={styles.card}>
-        <h3 style={styles.cardTitle}>📚 我的文章</h3>
-        {articles.length === 0 && (
-          <p style={styles.empty}>还没有文章，点击上方"创建文章"开始。</p>
+      {/* Separator */}
+      <div style={styles.separator} />
+
+      {/* My Articles section */}
+      <div style={styles.sectionHeader}>
+        <span style={styles.sectionIcon}>📚</span>
+        <span style={styles.sectionTitle}>我的文章</span>
+      </div>
+
+      {/* Articles container */}
+      <div style={styles.articlesContainer}>
+        {filteredArticles.length === 0 && (
+          <p style={styles.empty}>
+            {searchQuery ? '未找到匹配的文章。' : '还没有文章，点击上方"创建文章"开始。'}
+          </p>
         )}
-        {articles.map(article => (
-          <div key={article.id} style={styles.articleItem}>
-            <div style={styles.articleInfo}>
-              <span style={styles.articleTitle}>{article.title}</span>
-              <span style={styles.articleMeta}>
-                {article.sentences.length} 句 | {article.content.length} 字
-              </span>
+        <div style={styles.articlesGrid}>
+          {filteredArticles.map(article => (
+            <div
+              key={article.id}
+              style={styles.articleCard}
+              onClick={() => {
+                setSelectedArticle(article);
+                setView('detail');
+              }}
+              onMouseEnter={() => setHoveredArticleId(article.id)}
+              onMouseLeave={() => setHoveredArticleId(null)}
+            >
+              <span style={styles.articleCardTitle}>{article.title}</span>
+              {hoveredArticleId === article.id && (
+                <button
+                  style={styles.deleteBtn}
+                  onClick={(e) => handleDelete(article.id, e)}
+                  title="删除"
+                >
+                  🗑️
+                </button>
+              )}
             </div>
-            <div style={styles.articleActions}>
-              <button style={styles.memoryBtn} onClick={() => handleStartMemory(article)}>
-                🧠 开始记忆
-              </button>
-              <button style={styles.editBtn} onClick={() => handleEdit(article)}>
-                ✏️ 编辑
-              </button>
-              <SingleExportBtn
-                label={article.title}
-                data={article}
-                filename={`${article.title}.json`}
-              />
-              <button style={styles.deleteBtn} onClick={() => handleDelete(article.id)}>
-                🗑️
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* ===== 创建文章弹窗 ===== */}
@@ -165,68 +181,137 @@ export const ArticleManager: React.FC = () => {
 };
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { maxWidth: 800, margin: '0 auto', padding: '24px 16px' },
-  title: { textAlign: 'center', color: 'var(--text-primary)', marginBottom: 24 },
-  createRow: {
-    display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 28,
+  container: {
+    padding: '24px 28px',
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
   },
-  createBtn: {
-    padding: '14px 32px', fontSize: 17, fontWeight: 600,
-    backgroundColor: 'var(--bg-primary)', color: 'var(--text-on-primary)', border: 'none', borderRadius: 10,
-    cursor: 'pointer',
-  },
-  card: {
-    backgroundColor: 'var(--bg-card)',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    boxShadow: 'var(--shadow-card)',
-    border: '1px solid var(--border-default)',
-  },
-  cardTitle: { margin: '0 0 12px 0', color: 'var(--text-primary)', fontSize: 18 },
-  empty: { color: 'var(--text-muted)', textAlign: 'center', padding: 20 },
-  articleItem: {
+  headerRow: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '12px 0',
-    borderBottom: '1px solid var(--border-default)',
-    gap: 12,
-    flexWrap: 'wrap',
+    gap: 16,
   },
-  articleInfo: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 120 },
-  articleTitle: { fontWeight: 600, color: 'var(--text-primary)' },
-  articleMeta: { fontSize: 13, color: 'var(--text-muted)' },
-  articleActions: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' },
-  memoryBtn: {
-    padding: '6px 14px',
+  titleGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  titleIcon: {
+    fontSize: 28,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    margin: 0,
+  },
+  createBtn: {
+    padding: '8px 20px',
     fontSize: 14,
-    backgroundColor: 'var(--bg-primary)',
-    color: 'var(--text-on-primary)',
-    border: 'none',
-    borderRadius: 6,
+    fontWeight: 600,
+    backgroundColor: 'var(--bg-hover)',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-default)',
+    borderRadius: 8,
     cursor: 'pointer',
+    marginLeft: 8,
   },
-  editBtn: {
-    padding: '6px 14px', fontSize: 14, backgroundColor: 'var(--bg-hover)',
-    border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)',
+  searchInput: {
+    padding: '8px 14px',
+    fontSize: 14,
+    border: 'none',
+    borderBottom: '2px solid var(--border-strong)',
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    color: 'var(--text-primary)',
+    outline: 'none',
+    width: 200,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: 'var(--border-default)',
+    margin: '16px 0',
+  },
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    fontSize: 18,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  },
+  articlesContainer: {
+    backgroundColor: 'var(--bg-page)',
+    borderRadius: 12,
+    padding: 16,
+    border: '1px solid var(--border-default)',
+    flex: 1,
+    overflowY: 'auto',
+  },
+  articlesGrid: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 10,
+    alignContent: 'flex-start',
+  },
+  articleCard: {
+    position: 'relative' as const,
+    padding: '12px 16px',
+    backgroundColor: 'var(--bg-card)',
+    borderRadius: 10,
+    border: '1px solid var(--border-default)',
+    cursor: 'pointer',
+    minWidth: 140,
+    maxWidth: 220,
+    boxShadow: 'var(--shadow-card)',
+    transition: 'box-shadow 0.15s',
+  },
+  articleCardTitle: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    display: 'block',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   deleteBtn: {
-    padding: '6px 10px',
-    fontSize: 14,
+    position: 'absolute' as const,
+    bottom: 6,
+    right: 6,
+    padding: '4px 8px',
+    fontSize: 13,
     backgroundColor: 'var(--bg-danger)',
     color: 'var(--text-red)',
     border: 'none',
     borderRadius: 6,
     cursor: 'pointer',
+    lineHeight: 1,
   },
-
+  empty: {
+    color: 'var(--text-muted)',
+    textAlign: 'center',
+    padding: 40,
+    width: '100%',
+  },
   /* 表单 */
   formGroup: { marginBottom: 14 },
   label: { display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 },
   input: {
     width: '100%', padding: '10px 12px', fontSize: 15,
-    border: '1px solid var(--border-strong)', borderRadius: 8, boxSizing: 'border-box',
+    border: 'none',
+    borderBottom: '2px solid var(--border-strong)',
+    borderRadius: 0,
+    boxSizing: 'border-box',
+    backgroundColor: 'transparent',
   },
   formActions: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
   cancelBtn: {
@@ -238,3 +323,5 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-on-primary)', border: 'none', borderRadius: 6, cursor: 'pointer',
   },
 };
+
+

@@ -3,6 +3,21 @@ export function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+/* ==================== 指导记忆（Guided Memory） ==================== */
+
+/** 指导记忆中的一个步骤 */
+export interface GuideStep {
+  /** 提示文本 */
+  hint: string;
+  /** 该步骤要记忆的句子在文章中的索引 */
+  sentenceIndices: number[];
+}
+
+/** 指导记忆配置 */
+export interface GuideConfig {
+  steps: GuideStep[];
+}
+
 /* ==================== 语文记忆 ==================== */
 
 /** 一篇文章 */

@@ -8,17 +8,17 @@
   --bg-card: #ffffff;
   --bg-input: #ffffff;
   --bg-nav: #1e293b;
-  --bg-primary: #059669;
+  --bg-primary: #5b7a9a;
   --bg-danger: #fee2e2;
   --bg-danger-solid: #fef2f2;
-  --bg-success: #dcfce7;
+  --bg-success: #e0f2fe;
   --bg-hover: #f1f5f9;
-  --bg-selected: #dcfce7;
-  --bg-blank: #f0fdf4;
+  --bg-selected: #e0f2fe;
+  --bg-blank: #f0f8ff;
   --bg-warning: #fef2f2;
   --bg-ocr: #f0f9ff;
   --bg-json: #f5f3ff;
-  --bg-tab-active: #334155;
+  --bg-tab-active: #475569;
   --bg-transparent: transparent;
 
   /* 文字颜色 */
@@ -29,9 +29,9 @@
   --text-on-primary: #ffffff;
   --text-on-nav: #f1f5f9;
   --text-nav-tab: #94a3b8;
-  --text-green: #059669;
+  --text-green: #4f6f8f;
   --text-red: #dc2626;
-  --text-green-dark: #16a34a;
+  --text-green-dark: #3b5a7a;
   --text-orange: #ea580c;
   --text-ocr: #0369a1;
   --text-json: #7c3aed;
@@ -39,9 +39,9 @@
   /* 边框 */
   --border-default: #e2e8f0;
   --border-strong: #cbd5e1;
-  --border-green: #059669;
+  --border-green: #5b7a9a;
   --border-red: #fecaca;
-  --border-green-light: #86efac;
+  --border-green-light: #93b4d4;
   --border-ocr: #bae6fd;
   --border-json: #ddd6fe;
   --border-wrong-input: #fca5a5;
@@ -59,7 +59,7 @@
   --scrollbar-thumb-hover: #94a3b8;
 
   /* 闪卡界面 */
-  --bg-flashcard-page: #f0fdf4;
+  --bg-flashcard-page: #f0f4f8;
 }
 
 /* ==================== 深色主题 ==================== */
@@ -67,15 +67,15 @@
 [data-theme="dark"] {
   --bg-page: #0f172a;
   --bg-card: #1e293b;
-  --bg-input: #334155;
+  --bg-input: #1e293b;
   --bg-nav: #020617;
-  --bg-primary: #059669;
+  --bg-primary: #5b7a9a;
   --bg-danger: #450a0a;
   --bg-danger-solid: #450a0a;
-  --bg-success: #052e16;
+  --bg-success: #0c4a6e;
   --bg-hover: #334155;
-  --bg-selected: #064e3b;
-  --bg-blank: #064e3b;
+  --bg-selected: #1e3a5f;
+  --bg-blank: #1a2a3a;
   --bg-warning: #450a0a;
   --bg-ocr: #0c4a6e;
   --bg-json: #3b0764;
@@ -88,18 +88,18 @@
   --text-on-primary: #ffffff;
   --text-on-nav: #f1f5f9;
   --text-nav-tab: #64748b;
-  --text-green: #34d399;
+  --text-green: #7faec9;
   --text-red: #fca5a5;
-  --text-green-dark: #4ade80;
+  --text-green-dark: #93b4d4;
   --text-orange: #fb923c;
   --text-ocr: #7dd3fc;
   --text-json: #c4b5fd;
 
   --border-default: #334155;
   --border-strong: #475569;
-  --border-green: #059669;
+  --border-green: #5b7a9a;
   --border-red: #7f1d1d;
-  --border-green-light: #166534;
+  --border-green-light: #3a5a7a;
   --border-ocr: #0e7490;
   --border-json: #5b21b6;
   --border-wrong-input: #dc2626;
@@ -113,7 +113,7 @@
   --scrollbar-thumb: #475569;
   --scrollbar-thumb-hover: #64748b;
 
-  --bg-flashcard-page: #022c22;
+  --bg-flashcard-page: #0f1a2a;
 }
 
 /* ==================== 基础样式 ==================== */
@@ -169,10 +169,16 @@ textarea {
   line-height: 1.8;
 }
 
-/* 输入框边框默认使用 strong 色 */
+/* 输入框下划线样式 */
 input, textarea, select {
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
+  border: none;
+  border-bottom: 2px solid var(--border-strong);
+  border-radius: 0;
+  background-color: transparent;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-bottom-color: var(--border-green) !important;
 }
 
 /* Scrollbar */

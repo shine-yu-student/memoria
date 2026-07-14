@@ -5,9 +5,10 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
+  wide?: boolean;
 }
 
-export const Modal: React.FC<ModalProps> = ({ open, title, children, onClose }) => {
+export const Modal: React.FC<ModalProps> = ({ open, title, children, onClose, wide }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export const Modal: React.FC<ModalProps> = ({ open, title, children, onClose }) 
       style={styles.overlay}
       onClick={e => { if (e.target === overlayRef.current) onClose(); }}
     >
-      <div style={styles.dialog}>
+      <div style={{ ...styles.dialog, ...(wide ? styles.dialogWide : {}) }}>
         <div style={styles.header}>
           <h3 style={styles.title}>{title}</h3>
           <button style={styles.closeBtn} onClick={onClose}>&times;</button>
@@ -49,6 +50,10 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'var(--bg-card)', borderRadius: 16,
     padding: 0, minWidth: 360, maxWidth: 480, width: '90%',
     boxShadow: 'var(--shadow-dialog)',
+  },
+  dialogWide: {
+    maxWidth: 680,
+    minWidth: 520,
   },
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
