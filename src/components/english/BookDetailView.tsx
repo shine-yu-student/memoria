@@ -8,7 +8,7 @@ import {
 import { Modal } from '../common/Modal';
 import { SingleExportBtn } from '../common/JsonImportExport';
 import { useLayoutSettings } from '../common/LayoutContext';
-import { recognizeImages, type OcrPair } from '../../utils/ocr';
+import type { OcrPair } from '../../utils/ocr';
 
 /* ==================== 统一条目类型 ==================== */
 
@@ -22,15 +22,165 @@ type BookType = 'word' | 'sentence';
 
 /* ==================== 辅助 ==================== */
 
-function downloadJSON(data: unknown, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+/** 将任意值安全转为字符串（数字/对象等不会抛错） */
+function asString(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (v == null) return '';
+  return String(v);
 }
+
+/** 从任意数组提取 英文-中文 词条（字段类型安全） */
+function extractEntries(arr: unknown[]): { english: string; chinese: string }[] {
+  const out: { english: string; chinese: string }[] = [];
+  for (const item of arr) {
+    if (!item || typeof item !== 'object') continue;
+    const obj = item as Record<string, unknown>;
+    const english = asString(obj.english || obj.en).trim();
+    const chinese = asString(obj.chinese || obj.zh || obj.meaning).trim();
+    if (english && chinese) out.push({ english, chinese });
+  }
+  return out;
+}
+
+/* ==================== 条目卡片（memo 化：避免编辑时重渲染整个列表） ==================== */
+
+interface EntryChipProps {
+  entry: EntryItem;
+  selectMode: boolean;
+  isSelected: boolean;
+  isExpanded: boolean;
+  expandedClosing: boolean;
+  expandedPos: { top: number; left: number; maxWidth: number; transformOrigin?: string } | null;
+  editEn: string;
+  editZh: string;
+  expandOnHoverExit: string;
+  expandedRef: React.RefObject<HTMLDivElement>;
+  onToggleEntry?: (id: string) => void;
+  onSelectRange?: (id: string) => void;
+  onEntryClick: (entry: EntryItem, e: React.MouseEvent) => void;
+  onEditEnChange: (v: string) => void;
+  onEditZhChange: (v: string) => void;
+  onSaveExpanded: () => void;
+  onCloseExpanded: () => void;
+  onExpandedClosed: () => void;
+  onDeleteEntry: (entry: EntryItem) => void;
+}
+
+const EntryChip: React.FC<EntryChipProps> = React.memo(function EntryChip({
+  entry, selectMode, isSelected, isExpanded, expandedClosing, expandedPos, editEn, editZh,
+  expandOnHoverExit, expandedRef, onToggleEntry, onSelectRange, onEntryClick,
+  onEditEnChange, onEditZhChange, onSaveExpanded, onCloseExpanded, onExpandedClosed, onDeleteEntry,
+}) {
+  if (selectMode) {
+    return (
+      <div
+        className="memoria-entry-chip"
+        style={{
+          ...styles.entryChip,
+          ...(isSelected ? styles.entryChipSelected : {}),
+          cursor: 'pointer',
+        }}
+        onClick={(e) => {
+          // shift+点击由 onMouseDown 处理范围选择，click 不再重复 toggle，避免选中被立即取消
+          if (!e.shiftKey && onToggleEntry) onToggleEntry(entry.id);
+        }}
+        onMouseDown={(e) => {
+          if (e.shiftKey && onSelectRange) {
+            e.preventDefault();
+            onSelectRange(entry.id);
+          }
+        }}
+      >
+        <span style={styles.entryEn}>{entry.english}</span>
+        {isSelected && <span style={{ marginLeft: 6, color: 'var(--text-green)' }}>✓</span>}
+      </div>
+    );
+  }
+
+  // Normal mode with expand-on-click
+  return (
+    <div style={styles.entryWrapper}>
+      {/* Collapsed chip (always rendered to preserve flex slot) */}
+      <div
+        className="memoria-entry-chip"
+        style={{
+          ...styles.entryChip,
+          visibility: isExpanded ? 'hidden' : 'visible',
+        }}
+        onClick={(e) => !isExpanded && onEntryClick(entry, e)}
+      >
+        <span style={styles.entryEn}>{entry.english}</span>
+      </div>
+
+      {/* Expanded content — positioned fixed relative to viewport，带放大/缩回动画 */}
+      {isExpanded && expandedPos && (
+        <div
+          ref={expandedRef}
+          style={{
+            position: 'fixed' as const,
+            top: expandedPos.top,
+            left: expandedPos.left,
+            maxWidth: expandedPos.maxWidth,
+            transformOrigin: expandedPos.transformOrigin,
+            animation: expandedClosing
+              ? 'memoriaPopOut 0.15s ease forwards'
+              : 'memoriaPopIn 0.15s ease',
+            zIndex: 20,
+            padding: 12,
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 10,
+            boxShadow: '0 8px 28px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)',
+          }}
+          onAnimationEnd={(e) => {
+            if (e.animationName === 'memoriaPopOut') onExpandedClosed();
+          }}
+          onMouseLeave={() => {
+            if (expandOnHoverExit === 'mouseleave') onCloseExpanded();
+          }}
+        >
+          <div style={styles.expandedContent}>
+            <div style={styles.expandedFields}>
+              <div style={styles.fieldRow}>
+                <label style={styles.fieldLabel}>英文</label>
+                <input
+                  style={styles.fieldInput}
+                  value={editEn}
+                  onChange={e => onEditEnChange(e.target.value)}
+                  onBlur={onSaveExpanded}
+                  onClick={e => e.stopPropagation()}
+                />
+              </div>
+              <div style={styles.fieldRow}>
+                <label style={styles.fieldLabel}>中文</label>
+                <input
+                  style={styles.fieldInput}
+                  value={editZh}
+                  onChange={e => onEditZhChange(e.target.value)}
+                  onBlur={onSaveExpanded}
+                  onClick={e => e.stopPropagation()}
+                />
+              </div>
+            </div>
+            <div style={styles.expandedActions}>
+              <button
+                style={styles.smallDangerBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteEntry(entry);
+                }}
+                title="删除"
+                aria-label={`删除 ${entry.english}`}
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
 
 /* ==================== Props ==================== */
 
@@ -58,7 +208,10 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
 
   // Expanded word tracking
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
-  const [expandedPos, setExpandedPos] = useState<{ top: number; left: number; right?: number; maxWidth: number } | null>(null);
+  const [expandedPos, setExpandedPos] = useState<{ top: number; left: number; maxWidth: number; transformOrigin?: string } | null>(null);
+  const [expandedClosing, setExpandedClosing] = useState(false);
+  const expandedClosingRef = useRef(false);
+  useEffect(() => { expandedClosingRef.current = expandedClosing; });
   const [editEn, setEditEn] = useState('');
   const [editZh, setEditZh] = useState('');
 
@@ -88,23 +241,20 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
 
   const expandedRef = useRef<HTMLDivElement>(null);
 
+  // 最新值 refs：让回调保持稳定引用（用于 memo 子组件，避免每次输入都重渲染整个列表）
+  const bookRef = useRef(book);
+  useEffect(() => { bookRef.current = book; });
+  const editEnRef = useRef(editEn);
+  useEffect(() => { editEnRef.current = editEn; });
+  const editZhRef = useRef(editZh);
+  useEffect(() => { editZhRef.current = editZh; });
+  const expandedIdRef = useRef(expandedEntryId);
+  useEffect(() => { expandedIdRef.current = expandedEntryId; });
+  const onDataChangeRef = useRef(onDataChange);
+  useEffect(() => { onDataChangeRef.current = onDataChange; });
+
   const bookLabel = bookType === 'word' ? '词书' : '句书';
   const entryLabel = bookType === 'word' ? '词' : '句';
-
-  /** Click outside handler for expanded entry */
-  useEffect(() => {
-    if (!expandedEntryId) return;
-    if (expandOnHoverExit === 'click-outside') {
-      const handler = (e: MouseEvent) => {
-        if (expandedRef.current && !expandedRef.current.contains(e.target as Node)) {
-          setExpandedEntryId(null);
-          setExpandedPos(null);
-        }
-      };
-      document.addEventListener('mousedown', handler);
-      return () => document.removeEventListener('mousedown', handler);
-    }
-  }, [expandedEntryId, expandOnHoverExit]);
 
   /** 持久化到 storage */
   const persist = useCallback((updated: WordBook | SentenceBook) => {
@@ -116,6 +266,71 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     setBook(updated);
     setEntries('entries' in updated ? updated.entries.map(e => ({ id: e.id, english: e.english, chinese: e.chinese })) : []);
   }, [bookType]);
+
+  /** 保存展开条目的编辑（稳定引用：经 refs 读取最新值） */
+  const handleSaveExpanded = useCallback(() => {
+    const id = expandedIdRef.current;
+    const en = editEnRef.current.trim();
+    const zh = editZhRef.current.trim();
+    if (!id || !en || !zh) return;
+    const updated = {
+      ...bookRef.current,
+      entries: ('entries' in bookRef.current ? bookRef.current.entries : []).map(e =>
+        e.id === id ? { ...e, english: en, chinese: zh } : e
+      ),
+    };
+    persist(updated);
+    onDataChangeRef.current();
+  }, [persist]);
+
+  /** 关闭展开弹窗（保存编辑后先播放缩回动画，动画结束再由 onExpandedClosed 真正卸载） */
+  const closeExpanded = useCallback(() => {
+    const id = expandedIdRef.current;
+    const en = editEnRef.current.trim();
+    const zh = editZhRef.current.trim();
+    if (id && en && zh) {
+      handleSaveExpanded();
+    } else if (id && (en || zh)) {
+      // 只填了一半：让用户决定是否放弃，避免静默丢弃
+      if (!confirm('当前编辑内容不完整（英文或中文为空），确定放弃修改？')) return;
+    }
+    if (expandedIdRef.current) {
+      setExpandedClosing(true);
+      // 兜底：若 animationend 事件丢失（后台标签页节流等），250ms 后确保弹窗卸载。
+      // 幂等：正常关闭或切换卡片后 expandedClosing 已为 false，此处不会误伤。
+      window.setTimeout(() => {
+        if (expandedClosingRef.current) {
+          setExpandedClosing(false);
+          setExpandedEntryId(null);
+          setExpandedPos(null);
+        }
+      }, 250);
+    } else {
+      setExpandedEntryId(null);
+      setExpandedPos(null);
+    }
+  }, [handleSaveExpanded]);
+
+  /** 缩回动画结束后真正卸载弹窗 */
+  const handleExpandedClosed = useCallback(() => {
+    setExpandedClosing(false);
+    setExpandedEntryId(null);
+    setExpandedPos(null);
+  }, []);
+
+  /** Click outside handler for expanded entry */
+  useEffect(() => {
+    if (!expandedEntryId) return;
+    if (expandOnHoverExit === 'click-outside') {
+      const handler = (e: MouseEvent) => {
+        if (expandedRef.current && !expandedRef.current.contains(e.target as Node)) {
+          closeExpanded();
+        }
+      };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }
+  }, [expandedEntryId, expandOnHoverExit, closeExpanded]);
 
   /** 添加条目 */
   const handleAdd = () => {
@@ -148,19 +363,18 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
   };
 
   /** 删除条目 */
-  const handleDeleteEntry = (entryId: string) => {
-    const entry = entries.find(e => e.id === entryId);
-    if (!entry) return;
+  const handleDeleteEntry = useCallback((entry: EntryItem) => {
     if (!confirm(`确定删除该${entryLabel}「${entry.english}」？`)) return;
     const updated = {
-      ...book,
-      entries: ('entries' in book ? book.entries : []).filter(e => e.id !== entryId),
+      ...bookRef.current,
+      entries: ('entries' in bookRef.current ? bookRef.current.entries : []).filter(e => e.id !== entry.id),
     };
     persist(updated);
+    setExpandedClosing(false);
     setExpandedEntryId(null);
     setExpandedPos(null);
-    onDataChange();
-  };
+    onDataChangeRef.current();
+  }, [entryLabel, persist]);
 
   /** 删除整个书 */
   const handleDeleteBook = () => {
@@ -174,12 +388,14 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     onBack();
   };
 
-  /** 展开/折叠词条 */
-  const handleEntryClick = (entry: EntryItem, e: React.MouseEvent) => {
-    if (expandedEntryId === entry.id) {
+  /** 展开/折叠词条（稳定引用） */
+  const handleEntryClick = useCallback((entry: EntryItem, e: React.MouseEvent) => {
+    if (expandedIdRef.current === entry.id) {
+      setExpandedClosing(false);
       setExpandedEntryId(null);
       setExpandedPos(null);
     } else {
+      setExpandedClosing(false);
       setExpandedEntryId(entry.id);
       setEditEn(entry.english);
       setEditZh(entry.chinese);
@@ -214,27 +430,13 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
         popupWidth = Math.max(popupWidth, rect.width + gap * 2);
       }
 
-      setExpandedPos({ top, left, maxWidth: estWidth });
+      setExpandedPos({
+        top, left, maxWidth: popupWidth,
+        // 动画缩放中心：原卡片中心
+        transformOrigin: `${rect.width / 2}px ${rect.height / 2}px`,
+      });
     }
-  };
-
-  /** 保存展开条目的编辑 */
-  const handleSaveExpanded = () => {
-    if (!expandedEntryId || !editEn.trim() || !editZh.trim()) return;
-    const updated = {
-      ...book,
-      entries: ('entries' in book ? book.entries : []).map(e =>
-        e.id === expandedEntryId ? { ...e, english: editEn.trim(), chinese: editZh.trim() } : e
-      ),
-    };
-    persist(updated);
-    onDataChange();
-  };
-
-  /** 导出当前书 */
-  const handleExport = () => {
-    downloadJSON(book, `${book.title}.json`);
-  };
+  }, []);
 
   /** 打开编辑弹窗 */
   const openEdit = (entry: EntryItem) => {
@@ -270,13 +472,11 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     catch { setJsonParseError('JSON 格式解析失败，请检查语法。'); return; }
     let entries: { english: string; chinese: string }[] = [];
     if (Array.isArray(data)) {
-      entries = data.filter((item: any) => item && (item.english || item.en) && (item.chinese || item.zh || item.meaning))
-        .map((item: any) => ({ english: (item.english || item.en || '').trim(), chinese: (item.chinese || item.zh || item.meaning || '').trim() }));
+      entries = extractEntries(data);
     } else if (data && typeof data === 'object') {
-      const obj = data as Record<string, any>;
-      if (obj.entries && Array.isArray(obj.entries)) {
-        entries = obj.entries.filter((item: any) => item && (item.english || item.en) && (item.chinese || item.zh || item.meaning))
-          .map((item: any) => ({ english: (item.english || item.en || '').trim(), chinese: (item.chinese || item.zh || item.meaning || '').trim() }));
+      const obj = data as Record<string, unknown>;
+      if (Array.isArray(obj.entries)) {
+        entries = extractEntries(obj.entries);
       } else { setJsonParseError('JSON 中未找到有效的 entries 数组。'); return; }
     } else { setJsonParseError('无法识别的 JSON 格式。'); return; }
     if (entries.length === 0) { setJsonParseError('未能从 JSON 中提取出有效的词条。'); return; }
@@ -303,6 +503,8 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     setOcrImageNames(fileList.map(f => f.name).join('、'));
     setOcrLoading(true);
     try {
+      // 动态导入：tesseract.js 体积大，仅在真正使用 OCR 时加载
+      const { recognizeImages } = await import('../../utils/ocr');
       const result = await recognizeImages(fileList);
       setOcrPairs(result.pairs);
       setOcrLoading(false);
@@ -354,116 +556,31 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
           {entries.map(entry => {
             const isExpanded = expandedEntryId === entry.id;
             const isSelected = selectMode ? selectedEntryIds?.has(entry.id) : false;
-
-            if (selectMode) {
-              // Select mode: no expansion, just click to select
-              return (
-                <div
-                  key={entry.id}
-                  style={{
-                    ...styles.entryChip,
-                    ...(isSelected ? styles.entryChipSelected : {}),
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    if (onToggleEntry && onSelectRange) {
-                      // Use range selection for shift+click
-                      // We need to detect shift key — use a custom handler
-                      onToggleEntry(entry.id);
-                    }
-                  }}
-                  onMouseDown={(e) => {
-                    if (e.shiftKey && onSelectRange) {
-                      e.preventDefault();
-                      onSelectRange(entry.id);
-                    }
-                  }}
-                >
-                  <span style={styles.entryEn}>{entry.english}</span>
-                  {isSelected && <span style={{ marginLeft: 6, color: 'var(--text-green)' }}>✓</span>}
-                </div>
-              );
-            }
-
-            // Normal mode with expand-on-click
             return (
-              <div
+              <EntryChip
                 key={entry.id}
-                style={styles.entryWrapper}
-              >
-                {/* Collapsed chip (always rendered to preserve flex slot) */}
-                <div
-                  style={{
-                    ...styles.entryChip,
-                    visibility: isExpanded ? 'hidden' : 'visible',
-                  }}
-                  onClick={(e) => !isExpanded && handleEntryClick(entry, e)}
-                >
-                  <span style={styles.entryEn}>{entry.english}</span>
-                </div>
-
-                {/* Expanded content — positioned fixed relative to viewport */}
-                {isExpanded && expandedPos && (
-                  <div
-                    ref={expandedRef}
-                    style={{
-                      position: 'fixed' as const,
-                      top: expandedPos.top,
-                      left: expandedPos.left,
-                      maxWidth: expandedPos.maxWidth,
-                      zIndex: 20,
-                      padding: 12,
-                      backgroundColor: 'var(--bg-card)',
-                      border: '1px solid var(--border-strong)',
-                      borderRadius: 8,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-                    }}
-                    onMouseLeave={() => {
-                      if (expandOnHoverExit === 'mouseleave') {
-                        setExpandedEntryId(null);
-                        setExpandedPos(null);
-                      }
-                    }}
-                  >
-                    <div style={styles.expandedContent}>
-                      <div style={styles.expandedFields}>
-                        <div style={styles.fieldRow}>
-                          <label style={styles.fieldLabel}>英文</label>
-                          <input
-                            style={styles.fieldInput}
-                            value={editEn}
-                            onChange={e => setEditEn(e.target.value)}
-                            onBlur={handleSaveExpanded}
-                            onClick={e => e.stopPropagation()}
-                          />
-                        </div>
-                        <div style={styles.fieldRow}>
-                          <label style={styles.fieldLabel}>中文</label>
-                          <input
-                            style={styles.fieldInput}
-                            value={editZh}
-                            onChange={e => setEditZh(e.target.value)}
-                            onBlur={handleSaveExpanded}
-                            onClick={e => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
-                      <div style={styles.expandedActions}>
-                        <button
-                          style={styles.smallDangerBtn}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteEntry(entry.id);
-                          }}
-                          title="删除"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+                entry={entry}
+                selectMode={selectMode}
+                isSelected={!!isSelected}
+                isExpanded={isExpanded}
+                // 编辑态 props 只传给展开的项：其余项保持稳定值，memo 才能避免编辑时全列表重渲染
+                expandedPos={isExpanded ? expandedPos : null}
+                editEn={isExpanded ? editEn : ''}
+                editZh={isExpanded ? editZh : ''}
+                expandOnHoverExit={expandOnHoverExit}
+                expandedRef={expandedRef}
+                onToggleEntry={onToggleEntry}
+                onSelectRange={onSelectRange}
+                onEntryClick={handleEntryClick}
+                onEditEnChange={setEditEn}
+                onEditZhChange={setEditZh}
+                onSaveExpanded={handleSaveExpanded}
+                onCloseExpanded={closeExpanded}
+                onExpandedClosed={handleExpandedClosed}
+                onDeleteEntry={handleDeleteEntry}
+                // 只把 closing 状态传给展开项，其余项保持稳定 false，memo 才能跳过重渲染
+                expandedClosing={isExpanded ? expandedClosing : false}
+              />
             );
           })}
         </div>
@@ -579,6 +696,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     flex: 1,
+    minHeight: 0,
     overflow: 'hidden',
     maxHeight: '100%',
   },
@@ -639,6 +757,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   entriesContainer: {
     flex: 1,
+    minHeight: 0,
     backgroundColor: 'var(--bg-page)',
     borderRadius: 12,
     border: '1px solid var(--border-default)',

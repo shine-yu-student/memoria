@@ -204,6 +204,25 @@ input:focus, textarea:focus, select:focus {
   to { transform: rotate(360deg); }
 }
 
+/* ===== 词条卡片交互（词书/句书详情页） ===== */
+/* 悬浮浮起：上移 + 四周淡阴影（内联样式未设置 transform/filter，类样式可生效） */
+.memoria-entry-chip:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.18));
+}
+
+/* 点击展开：卡片放大浮现 */
+@keyframes memoriaPopIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* 关闭：卡片缩回原位 */
+@keyframes memoriaPopOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.92); }
+}
+
 /* 过渡动画 */
 * {
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { WordBook, SentenceBook } from '../../types';
 import { uid } from '../../types';
 import {
@@ -24,7 +24,8 @@ export const BookManager: React.FC = () => {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedWordEntryIds, setSelectedWordEntryIds] = useState<Set<string>>(new Set());
   const [selectedSentenceEntryIds, setSelectedSentenceEntryIds] = useState<Set<string>>(new Set());
-  const [lastClickedEntryId, setLastClickedEntryId] = useState<string | null>(null);
+  // 用 ref 保存最近点击的条目 id：避免 handleRangeSelect 依赖 state 导致引用变化、全列表重渲染
+  const lastClickedEntryIdRef = useRef<string | null>(null);
   const [preSelectedEntries, setPreSelectedEntries] = useState<{ id: string; english: string; chinese: string }[] | null>(null);
 
   // 弹窗状态
@@ -80,7 +81,18 @@ export const BookManager: React.FC = () => {
     refresh();
   };
 
-  const handleDataChange = () => { refresh(); };
+  const handleDataChange = () => {
+    const wb = loadWordBooks();
+    const sb = loadSentenceBooks();
+    setWordBooks(wb);
+    setSentenceBooks(sb);
+    // 清理选中集中已不存在的条目 id（删除词书/条目后 totalSelected 不再虚高）
+    const wordAlive = new Set(wb.flatMap(b => b.entries.map(e => e.id)));
+    const sentAlive = new Set(sb.flatMap(b => b.entries.map(e => e.id)));
+    setSelectedWordEntryIds(prev => (prev.size === 0 ? prev : new Set([...prev].filter(id => wordAlive.has(id)))));
+    setSelectedSentenceEntryIds(prev => (prev.size === 0 ? prev : new Set([...prev].filter(id => sentAlive.has(id)))));
+    lastClickedEntryIdRef.current = (lastClickedEntryIdRef.current && (wordAlive.has(lastClickedEntryIdRef.current) || sentAlive.has(lastClickedEntryIdRef.current))) ? lastClickedEntryIdRef.current : null;
+  };
 
   const handleDeleteWordBook = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -104,7 +116,7 @@ export const BookManager: React.FC = () => {
       setSelectMode(false);
       setSelectedWordEntryIds(new Set());
       setSelectedSentenceEntryIds(new Set());
-      setLastClickedEntryId(null);
+      lastClickedEntryIdRef.current = null;
     }
   };
 
@@ -143,11 +155,11 @@ export const BookManager: React.FC = () => {
     if (!book) return;
 
     const entryIds = book.entries.map(e => e.id);
-    const lastIdx = lastClickedEntryId ? entryIds.indexOf(lastClickedEntryId) : -1;
+    const lastIdx = lastClickedEntryIdRef.current ? entryIds.indexOf(lastClickedEntryIdRef.current) : -1;
     const currentIdx = entryIds.indexOf(entryId);
     if (lastIdx === -1 || currentIdx === -1) {
       toggleEntry(entryId, isWord);
-      setLastClickedEntryId(entryId);
+      lastClickedEntryIdRef.current = entryId;
       return;
     }
 
@@ -159,8 +171,18 @@ export const BookManager: React.FC = () => {
       for (let i = start; i <= end; i++) next.add(entryIds[i]);
       return next;
     });
-    setLastClickedEntryId(entryId);
-  }, [lastClickedEntryId, toggleEntry, wordBooks, sentenceBooks]);
+    lastClickedEntryIdRef.current = entryId;
+  }, [toggleEntry, wordBooks, sentenceBooks]);
+
+  /** 供 BookDetailView 的稳定回调（配合 EntryChip memo） */
+  const handleToggleEntry = useCallback(
+    (id: string) => toggleEntry(id, viewingBookType === 'word'),
+    [toggleEntry, viewingBookType]
+  );
+  const handleRangeSelectEntry = useCallback(
+    (id: string) => handleRangeSelect(id, viewingBookType === 'word'),
+    [handleRangeSelect, viewingBookType]
+  );
 
   /** Start the flashcard session */
   const handleStartMemory = () => {
@@ -198,8 +220,8 @@ export const BookManager: React.FC = () => {
         onDataChange={handleDataChange}
         selectMode={selectMode}
         selectedEntryIds={isWord ? selectedWordEntryIds : selectedSentenceEntryIds}
-        onToggleEntry={(id) => toggleEntry(id, isWord)}
-        onSelectRange={(id) => handleRangeSelect(id, isWord)}
+        onToggleEntry={handleToggleEntry}
+        onSelectRange={handleRangeSelectEntry}
       />
     );
   }
@@ -208,7 +230,15 @@ export const BookManager: React.FC = () => {
   if (view === 'memory') {
     return (
       <EnglishMemoryView
-        onBack={() => { setView('list'); setSelectMode(false); setPreSelectedEntries(null); }}
+        onBack={() => {
+          setView('list');
+          setSelectMode(false);
+          setPreSelectedEntries(null);
+          // 清空选中集，避免下次进入选择模式残留旧选中
+          setSelectedWordEntryIds(new Set());
+          setSelectedSentenceEntryIds(new Set());
+          lastClickedEntryIdRef.current = null;
+        }}
         initialEntries={preSelectedEntries ?? undefined}
       />
     );
@@ -276,16 +306,10 @@ export const BookManager: React.FC = () => {
               key={book.id}
               style={styles.bookCard}
               onClick={() => {
-                if (selectMode) {
-                  // In select mode, go to detail view to select individual entries
-                  setViewingBook(book);
-                  setViewingBookType('word');
-                  setView('detail');
-                } else {
-                  setViewingBook(book);
-                  setViewingBookType('word');
-                  setView('detail');
-                }
+                // 选择模式与普通模式行为一致：进入详情页（选择模式可在详情中选择条目）
+                setViewingBook(book);
+                setViewingBookType('word');
+                setView('detail');
               }}
               onMouseEnter={() => setHoveredBookId(book.id)}
               onMouseLeave={() => setHoveredBookId(null)}
@@ -296,12 +320,17 @@ export const BookManager: React.FC = () => {
                 <button style={styles.deleteBtn} onClick={(e) => handleDeleteWordBook(book.id, e)} title="删除">🗑️</button>
               )}
               {hoveredBookId === book.id && selectMode && (
-                <div
+                <label
                   style={styles.selectCheckbox}
-                  onClick={(e) => { e.stopPropagation(); toggleBookSelection(book.id, true); }}
+                  onClick={(e) => { e.stopPropagation(); }}
                 >
-                  <input type="checkbox" readOnly checked={book.entries.every(e => selectedWordEntryIds.has(e.id))} />
-                </div>
+                  <input
+                    type="checkbox"
+                    checked={book.entries.every(e => selectedWordEntryIds.has(e.id))}
+                    onChange={() => toggleBookSelection(book.id, true)}
+                    aria-label={`全选/取消全选词书「${book.title}」`}
+                  />
+                </label>
               )}
             </div>
           ))}
@@ -340,12 +369,17 @@ export const BookManager: React.FC = () => {
                 <button style={styles.deleteBtn} onClick={(e) => handleDeleteSentenceBook(book.id, e)} title="删除">🗑️</button>
               )}
               {hoveredBookId === book.id && selectMode && (
-                <div
+                <label
                   style={styles.selectCheckbox}
-                  onClick={(e) => { e.stopPropagation(); toggleBookSelection(book.id, false); }}
+                  onClick={(e) => { e.stopPropagation(); }}
                 >
-                  <input type="checkbox" readOnly checked={book.entries.every(e => selectedSentenceEntryIds.has(e.id))} />
-                </div>
+                  <input
+                    type="checkbox"
+                    checked={book.entries.every(e => selectedSentenceEntryIds.has(e.id))}
+                    onChange={() => toggleBookSelection(book.id, false)}
+                    aria-label={`全选/取消全选句书「${book.title}」`}
+                  />
+                </label>
               )}
             </div>
           ))}
@@ -384,7 +418,7 @@ export const BookManager: React.FC = () => {
 };
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: '24px 28px', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'auto' },
+  container: { padding: '24px 28px', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'auto' },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 },
   titleGroup: { display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 },
   titleIcon: { fontSize: 28 },
@@ -419,7 +453,7 @@ const styles: Record<string, React.CSSProperties> = {
   sectionIcon: { fontSize: 18 },
   sectionTitle: { fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' },
   createSmallBtn: { padding: '5px 14px', fontSize: 13, fontWeight: 500, backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)', borderRadius: 6, cursor: 'pointer', marginLeft: 8 },
-  booksContainer: { backgroundColor: 'var(--bg-page)', borderRadius: 12, padding: 16, border: '1px solid var(--border-default)', minHeight: 60 },
+  booksContainer: { backgroundColor: 'var(--bg-page)', borderRadius: 12, padding: 16, border: '1px solid var(--border-default)', flex: 1, minHeight: 0, overflowY: 'auto' },
   booksGrid: { display: 'flex', flexWrap: 'wrap', gap: 10, alignContent: 'flex-start' },
   bookCard: { position: 'relative' as const, padding: '12px 16px', backgroundColor: 'var(--bg-card)', borderRadius: 10, border: '1px solid var(--border-default)', cursor: 'pointer', minWidth: 140, maxWidth: 220, boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: 4 },
   bookCardTitle: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },

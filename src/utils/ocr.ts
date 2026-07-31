@@ -141,9 +141,13 @@ export async function recognizeImages(files: File[]): Promise<OcrResult> {
 
     for (const file of files) {
       const imageUrl = URL.createObjectURL(file);
-      const { data } = await worker.recognize(imageUrl);
-      allRawText += data.text + '\n';
-      URL.revokeObjectURL(imageUrl);
+      try {
+        const { data } = await worker.recognize(imageUrl);
+        allRawText += data.text + '\n';
+      } finally {
+        // 识别失败也要释放 object URL
+        URL.revokeObjectURL(imageUrl);
+      }
     }
 
     const pairs = parseOcrText(allRawText);

@@ -10,14 +10,66 @@ interface ModalProps {
 
 export const Modal: React.FC<ModalProps> = ({ open, title, children, onClose, wide }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // 用 ref 保存最新 onClose，避免父组件内联函数导致 keydown 监听频繁重绑
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
 
   useEffect(() => {
+    if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      // 简单 focus trap：Tab/Shift+Tab 在弹窗内循环
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
-    if (open) window.addEventListener('keydown', handler);
+    window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [open, onClose]);
+  }, [open]);
+
+  // 打开时把焦点移入弹窗（子组件有 autoFocus 时优先）；关闭时恢复到打开前的焦点元素
+  useEffect(() => {
+    if (!open) return;
+    const prevFocus = document.activeElement as HTMLElement | null;
+    const t = setTimeout(() => {
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      if (dialog.querySelector('[autofocus]')) return;
+      const focusables = dialog.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length > 0) focusables[0].focus();
+    }, 0);
+    return () => {
+      clearTimeout(t);
+      prevFocus?.focus?.();
+    };
+  }, [open]);
+
+  // 锁定背景滚动
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
 
   if (!open) return null;
 
@@ -25,9 +77,15 @@ export const Modal: React.FC<ModalProps> = ({ open, title, children, onClose, wi
     <div
       ref={overlayRef}
       style={styles.overlay}
-      onClick={e => { if (e.target === overlayRef.current) onClose(); }}
+      onClick={e => { if (e.target === overlayRef.current) onCloseRef.current(); }}
     >
-      <div style={{ ...styles.dialog, ...(wide ? styles.dialogWide : {}) }}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        style={{ ...styles.dialog, ...(wide ? styles.dialogWide : {}) }}
+      >
         <div style={styles.header}>
           <h3 style={styles.title}>{title}</h3>
           <button style={styles.closeBtn} onClick={onClose}>&times;</button>

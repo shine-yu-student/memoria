@@ -24,7 +24,12 @@ function loadJSON<T>(key: string, fallback: T): T {
 }
 
 function saveJSON<T>(key: string, data: T): void {
-  localStorage.setItem(key, JSON.stringify(data));
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    // 配额满/隐私模式等场景不崩溃，仅告警
+    console.warn(`保存 localStorage[${key}] 失败`, e);
+  }
 }
 
 /* ==================== 文章 ==================== */
@@ -51,6 +56,14 @@ export function updateArticle(updated: Article): void {
 export function deleteArticle(id: string): void {
   const list = loadArticles().filter(a => a.id !== id);
   saveArticles(list);
+  // 清理该文章的指导记忆关联数据，避免删除后残留、重建时"复活"旧配置
+  try {
+    localStorage.removeItem(`memoria:guided:${id}:config`);
+    localStorage.removeItem(`memoria:guided:${id}:step`);
+    localStorage.removeItem(`memoria:guided:${id}:inputs`);
+  } catch (e) {
+    console.warn('清理指导记忆数据失败', e);
+  }
 }
 
 /* ==================== 词书 ==================== */
@@ -118,61 +131,91 @@ export function exportAll(): MemoriaData {
   };
 }
 
-/** 导入系统全部数据（合并模式 — 按标题匹配，合并条目并去重） */
-export function importAll(data: MemoriaData): void {
-  // --- 文章：按标题合并 ---
+/** 导入统计：added=新增资源数，merged=合并（同 id）资源数，skipped=跳过（同 id 文章已存在）数 */
+export interface ImportStats {
+  added: number;
+  merged: number;
+  skipped: number;
+}
+
+/**
+ * 导入系统全部数据（按 id 合并：同 id 词书/句书条目合并去重；同 id 文章保留原有不覆盖）。
+ * 返回统计信息供 UI 提示，避免"静默丢弃数据"。
+ */
+export function importAll(data: MemoriaData): ImportStats {
+  const stats: ImportStats = { added: 0, merged: 0, skipped: 0 };
+
+  // --- 文章：按 id 合并；同 id 保留原有（内容通常唯一，不自动覆盖） ---
   const existingArticles = loadArticles();
   const incomingArticles = data.articles || [];
-  const articleMap = new Map(existingArticles.map(a => [a.title, a]));
+  const articleMap = new Map(existingArticles.map(a => [a.id, a]));
   for (const article of incomingArticles) {
-    const existing = articleMap.get(article.title);
-    if (existing) {
-      // 标题相同，保留原有，不做自动内容合并（文章内容通常是唯一的）
-      // 但如果导入的文章内容不同，保持原样不覆盖
-    } else {
-      articleMap.set(article.title, article);
+    if (article && typeof article === 'object' && typeof article.id === 'string') {
+      if (articleMap.has(article.id)) {
+        stats.skipped += 1;
+      } else {
+        articleMap.set(article.id, article);
+        stats.added += 1;
+      }
     }
   }
   saveArticles(Array.from(articleMap.values()));
 
-  // --- 词书：按标题合并，条目去重（按 english 字段） ---
+  // --- 词书：按 id 合并，条目去重（按 english 字段） ---
   const existingWordBooks = loadWordBooks();
   const incomingWordBooks = data.wordBooks || [];
-  const wordBookMap = new Map(existingWordBooks.map(b => [b.title, b]));
+  const wordBookMap = new Map(existingWordBooks.map(b => [b.id, b]));
   for (const book of incomingWordBooks) {
-    const existing = wordBookMap.get(book.title);
+    if (!book || typeof book !== 'object' || typeof book.id !== 'string' || !Array.isArray(book.entries)) {
+      stats.skipped += 1;
+      continue;
+    }
+    const existing = wordBookMap.get(book.id);
     if (existing) {
-      // 合并 entries 并去重
       const entryMap = new Map(existing.entries.map(e => [e.english, e]));
       for (const entry of book.entries) {
+        // 元素级校验：跳过损坏的条目，避免半导入
+        if (!entry || typeof entry !== 'object') continue;
         if (!entryMap.has(entry.english)) {
           entryMap.set(entry.english, entry);
         }
       }
-      wordBookMap.set(book.title, { ...existing, entries: Array.from(entryMap.values()) });
+      wordBookMap.set(book.id, { ...existing, entries: Array.from(entryMap.values()) });
+      stats.merged += 1;
     } else {
-      wordBookMap.set(book.title, book);
+      wordBookMap.set(book.id, book);
+      stats.added += 1;
     }
   }
   saveWordBooks(Array.from(wordBookMap.values()));
 
-  // --- 句书：按标题合并，条目去重（按 english 字段） ---
+  // --- 句书：按 id 合并，条目去重（按 english 字段） ---
   const existingSentenceBooks = loadSentenceBooks();
   const incomingSentenceBooks = data.sentenceBooks || [];
-  const sentenceBookMap = new Map(existingSentenceBooks.map(b => [b.title, b]));
+  const sentenceBookMap = new Map(existingSentenceBooks.map(b => [b.id, b]));
   for (const book of incomingSentenceBooks) {
-    const existing = sentenceBookMap.get(book.title);
+    if (!book || typeof book !== 'object' || typeof book.id !== 'string' || !Array.isArray(book.entries)) {
+      stats.skipped += 1;
+      continue;
+    }
+    const existing = sentenceBookMap.get(book.id);
     if (existing) {
       const entryMap = new Map(existing.entries.map(e => [e.english, e]));
       for (const entry of book.entries) {
+        // 元素级校验：跳过损坏的条目，避免半导入
+        if (!entry || typeof entry !== 'object') continue;
         if (!entryMap.has(entry.english)) {
           entryMap.set(entry.english, entry);
         }
       }
-      sentenceBookMap.set(book.title, { ...existing, entries: Array.from(entryMap.values()) });
+      sentenceBookMap.set(book.id, { ...existing, entries: Array.from(entryMap.values()) });
+      stats.merged += 1;
     } else {
-      sentenceBookMap.set(book.title, book);
+      sentenceBookMap.set(book.id, book);
+      stats.added += 1;
     }
   }
   saveSentenceBooks(Array.from(sentenceBookMap.values()));
+
+  return stats;
 }

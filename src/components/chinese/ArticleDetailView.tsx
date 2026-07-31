@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { Article } from '../../types';
 import { updateArticle } from '../../utils/storage';
 import { splitIntoSentences } from '../../utils/splitter';
@@ -17,32 +17,68 @@ export const ArticleDetailView: React.FC<Props> = ({ article: initialArticle, on
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(initialArticle.title);
 
+  // 最新值 refs：防抖持久化与卸载 flush 需要读取最新内容
+  const articleRef = useRef(initialArticle);
+  useEffect(() => { articleRef.current = article; });
+  const contentRef = useRef(initialArticle.content);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   /** 持久化到 storage（保存时重新切分句子） */
   const persist = useCallback((updated: Article) => {
     updateArticle(updated);
     setArticle(updated);
+    articleRef.current = updated;
   }, []);
 
-  /** 保存标题 */
+  /** 立即落盘当前内容（防抖 flush） */
+  const flushPersist = useCallback(() => {
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
+    const updated = {
+      ...articleRef.current,
+      content: contentRef.current,
+      sentences: splitIntoSentences(contentRef.current),
+    };
+    persist(updated);
+    onDataChange();
+  }, [persist, onDataChange]);
+
+  // 卸载时若还有未落盘的防抖内容，直接写存储（避免丢失最后一次输入）
+  useEffect(() => {
+    return () => {
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+        const updated = {
+          ...articleRef.current,
+          content: contentRef.current,
+          sentences: splitIntoSentences(contentRef.current),
+        };
+        try { updateArticle(updated); } catch (e) { console.warn('保存文章失败', e); }
+      }
+    };
+  }, []);
+
+  /** 保存标题（先 flush 内容，避免标题保存覆盖掉未落盘的最新内容） */
   const handleSaveTitle = () => {
-    const newTitle = titleDraft.trim() || article.title;
-    const updated = { ...article, title: newTitle };
+    flushPersist();
+    const newTitle = titleDraft.trim() || articleRef.current.title;
+    const updated = { ...articleRef.current, title: newTitle };
     persist(updated);
     setEditingTitle(false);
     onDataChange();
   };
 
-  /** 内容变更 */
+  /** 内容变更（500ms 防抖持久化，避免每次按键全量读写） */
   const handleContentChange = (newContent: string) => {
+    contentRef.current = newContent;
     setContent(newContent);
-    const updated = {
-      ...article,
-      content: newContent,
-      sentences: splitIntoSentences(newContent),
-    };
-    persist(updated);
-    onDataChange();
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(flushPersist, 500);
   };
+
+  const sentenceCount = useMemo(() => splitIntoSentences(content).length, [content]);
 
   return (
     <div style={styles.page}>
@@ -58,7 +94,7 @@ export const ArticleDetailView: React.FC<Props> = ({ article: initialArticle, on
               onBlur={handleSaveTitle}
               onKeyDown={e => {
                 if (e.key === 'Enter') handleSaveTitle();
-                if (e.key === 'Escape') { setEditingTitle(false); setTitleDraft(article.title); }
+                if (e.key === 'Escape') { setEditingTitle(false); setTitleDraft(articleRef.current.title); }
               }}
               autoFocus
             />
@@ -79,7 +115,9 @@ export const ArticleDetailView: React.FC<Props> = ({ article: initialArticle, on
             filename={`${article.title}.json`}
           />
           <button style={styles.memoryBtn} onClick={() => {
-            onStartMemory?.(article);
+            // 先落盘未保存的输入，再带着最新内容进入记忆
+            flushPersist();
+            onStartMemory?.(articleRef.current);
           }}>
             🧠 开始记忆
           </button>
@@ -98,7 +136,7 @@ export const ArticleDetailView: React.FC<Props> = ({ article: initialArticle, on
           onChange={e => handleContentChange(e.target.value)}
         />
         <div style={styles.metaInfo}>
-          共 {article.sentences.length} 句 / {content.length} 字
+          共 {sentenceCount} 句 / {content.length} 字
         </div>
       </div>
     </div>
@@ -113,6 +151,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     flex: 1,
+    minHeight: 0,
     overflow: 'hidden',
     maxHeight: '100%',
   },
@@ -186,6 +225,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   editorCard: {
     flex: 1,
+    minHeight: 0,
     backgroundColor: 'var(--bg-page)',
     borderRadius: 12,
     border: '1px solid var(--border-default)',

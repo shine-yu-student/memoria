@@ -71,19 +71,26 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
 
   const isRetestRef = useRef(false);
 
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const focusInput = () => {
-    setTimeout(() => inputRef.current?.focus(), 50);
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    focusTimerRef.current = setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  /** Timer management */
+  // 卸载时清理所有定时器
+  useEffect(() => () => {
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+  }, []);
+
+  /** Timer management（completed 阶段停止计时） */
   useEffect(() => {
-    if (phase === 'flashcard') {
+    if (phase === 'flashcard' && flashPhase !== 'completed') {
       timerRef.current = setInterval(() => { setElapsed(e => e + 1); }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase]);
+  }, [phase, flashPhase]);
 
   /** 取下一个词 */
   const nextWord = useCallback(() => {
@@ -125,7 +132,7 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
 
     setFlashPhase('completed');
     setCurrentEntry(null);
-    setPhase('result');
+    // 停在"全部完成"页，由用户点击"查看结果"进入结果页
   }, []);
 
   /** 提交答案 */
@@ -142,6 +149,9 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
       } else {
         setProgress(p => ({ ...p, wrong: p.wrong + 1 }));
         wrongEntriesRef.current.push(currentEntry);
+        // 清空输入，避免同一错误内容被重复提交计数
+        setInput('');
+        focusInput();
       }
       return;
     }
@@ -186,8 +196,12 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
   useEffect(() => { focusInput(); }, [currentEntry]);
 
   // Auto-start memory when initial entries are provided
+  // StrictMode 下 effect 会执行两次，用 ref 保证只启动一次
+  const autoStartedRef = useRef(false);
   useEffect(() => {
+    if (autoStartedRef.current) return;
     if (initialEntries && initialEntries.length > 0) {
+      autoStartedRef.current = true;
       startMemory(initialEntries);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -248,6 +262,7 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
                   ref={inputRef}
                   style={{ ...styles.flashcardInput, ...(isWrongPhase ? styles.flashcardInputWrong : {}) }}
                   placeholder={isWrongPhase ? '重新输入正确答案…' : '输入对应的英文…'}
+                  aria-label={isWrongPhase ? '重新输入正确答案' : '输入对应的英文'}
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -322,7 +337,7 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
 
 const styles: Record<string, React.CSSProperties> = {
   flashcardPage: {
-    display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)',
+    display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0,
     backgroundColor: 'var(--bg-flashcard-page)', overflow: 'hidden',
   },
   topBar: {
@@ -351,7 +366,7 @@ const styles: Record<string, React.CSSProperties> = {
   revealAnswer: { fontSize: 22, fontWeight: 700, color: 'var(--text-red)', marginLeft: 8 },
   revealHint: { fontSize: 13, color: 'var(--text-muted)', marginTop: 8 },
   flashcardInput: { width: '100%', padding: '14px 16px', fontSize: 18, textAlign: 'center', border: 'none', borderBottom: '2px solid var(--border-strong)', borderRadius: 0, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s', backgroundColor: 'transparent' },
-  flashcardInputWrong: { borderBottomColor: 'var(--text-red) !important' },
+  flashcardInputWrong: { borderBottomColor: 'var(--text-red)' },
   submitFlashBtn: { width: '100%', padding: '14px', fontSize: 18, fontWeight: 600, backgroundColor: 'var(--bg-hover)', color: 'var(--text-secondary)', border: '1px solid var(--border-default)', borderRadius: 10, cursor: 'pointer' },
   enterHint: { fontSize: 13, color: 'var(--text-muted)', marginTop: -8 },
   completedMsg: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '20px 0' },

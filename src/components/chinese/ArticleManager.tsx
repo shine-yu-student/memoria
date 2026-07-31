@@ -40,7 +40,13 @@ export const ArticleManager: React.FC = () => {
   };
 
   const handleCreateArticle = () => {
-    const title = newArticleTitle.trim() || `未命名文章 ${articles.length + 1}`;
+    const existingTitles = new Set(articles.map(a => a.title));
+    let title = newArticleTitle.trim();
+    if (!title) {
+      // 生成不重复的默认标题（删除文章后不会产生重复名）
+      let n = articles.length + 1;
+      do { title = `未命名文章 ${n}`; n++; } while (existingTitles.has(title));
+    }
     const article: Article = {
       id: uid(),
       title,
@@ -186,6 +192,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     flex: 1,
+    minHeight: 0,
   },
   headerRow: {
     display: 'flex',
@@ -254,6 +261,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 16,
     border: '1px solid var(--border-default)',
     flex: 1,
+    minHeight: 0,
     overflowY: 'auto',
   },
   articlesGrid: {

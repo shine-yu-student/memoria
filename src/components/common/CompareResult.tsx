@@ -55,6 +55,9 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth: 800,
     margin: '0 auto',
     padding: '24px 16px',
+    flex: 1,
+    minHeight: 0,
+    overflowY: 'auto',
   },
   title: {
     textAlign: 'center',

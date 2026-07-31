@@ -20,7 +20,8 @@ function downloadJSON(data: unknown, filename: string) {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // 延迟 revoke，避免 Firefox 等浏览器下载尚未开始时 URL 已失效
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function readJSONFile(file: File): Promise<unknown> {
@@ -55,13 +56,13 @@ export const JsonImportExport: React.FC<JsonImportExportProps> = ({ onImport }) 
     if (!file) return;
     try {
       const data = (await readJSONFile(file)) as MemoriaData;
-      if (!data.version) {
-        alert('无效的备份文件格式');
+      if (typeof data.version !== 'number') {
+        alert('无效的备份文件格式（缺少 version 字段）');
         return;
       }
-      importAll(data);
+      const stats = importAll(data);
       onImport();
-      alert('✅ 导入成功！（按标题合并，同名词书/句书的条目已合并去重）');
+      alert(`✅ 导入完成！新增 ${stats.added} 项、合并 ${stats.merged} 项、跳过 ${stats.skipped} 项（已存在的文章未覆盖）。`);
     } catch (err) {
       alert(`导入失败: ${err instanceof Error ? err.message : '未知错误'}`);
     } finally {

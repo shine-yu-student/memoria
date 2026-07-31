@@ -1,9 +1,34 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import type { Article, BlankItem, GuideConfig } from '../../types';
+import type { Article, BlankItem, GuideConfig, GuideStep } from '../../types';
 import { uid } from '../../types';
 import { pickRandomIndices, extractDelimiters } from '../../utils/splitter';
 import { CompareResult } from '../common/CompareResult';
 import { useLayoutSettings } from '../common/LayoutContext';
+
+/**
+ * 校验并清洗指导记忆配置。
+ * 要求：steps 为数组；每步含字符串 hint 和整数、非负的 sentenceIndices 数组。
+ * 任何一项不合法返回 null（调用方应拒绝导入并清除旧数据）。
+ */
+function sanitizeGuideConfig(raw: unknown): GuideConfig | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const steps = (raw as { steps?: unknown }).steps;
+  if (!Array.isArray(steps)) return null;
+  const cleaned: GuideStep[] = [];
+  for (const step of steps) {
+    if (!step || typeof step !== 'object') return null;
+    const { hint, sentenceIndices } = step as { hint?: unknown; sentenceIndices?: unknown };
+    if (typeof hint !== 'string') return null;
+    if (!Array.isArray(sentenceIndices)) return null;
+    const indices: number[] = [];
+    for (const idx of sentenceIndices) {
+      if (!Number.isInteger(idx) || (idx as number) < 0) return null;
+      indices.push(idx as number);
+    }
+    cleaned.push({ hint, sentenceIndices: indices });
+  }
+  return { steps: cleaned };
+}
 
 interface Props {
   article: Article;
@@ -17,22 +42,26 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
   const [blankIndices, setBlankIndices] = useState<number[]>([]);
   const [customSelected, setCustomSelected] = useState<Set<number>>(new Set());
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null);
-  const [userInputs, setUserInputs] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem(`memoria:guided:${article.id}:inputs`) || '{}'); }
-    catch { return {}; }
+  const [userInputs, setUserInputs] = useState<Record<string, string>>({});
+  const [guidedInputs, setGuidedInputs] = useState<Record<string, string>>(() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(`memoria:guided:${article.id}:inputs`) || '{}');
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch { return {}; }
   });
   const [graded, setGraded] = useState(false);
   const [ratio, setRatio] = useState(0.4);
   const [guidedConfig, setGuidedConfig] = useState<GuideConfig | null>(() => {
     try {
       const raw = localStorage.getItem(`memoria:guided:${article.id}:config`);
-      return raw ? JSON.parse(raw) : null;
+      return raw ? sanitizeGuideConfig(JSON.parse(raw)) : null;
     } catch { return null; }
   });
   const [guidedStep, setGuidedStep] = useState(() => {
     try {
       const raw = localStorage.getItem(`memoria:guided:${article.id}:step`);
-      return raw ? parseInt(raw, 10) : 0;
+      const step = raw ? parseInt(raw, 10) : 0;
+      return Number.isFinite(step) && step >= 0 ? step : 0;
     } catch { return 0; }
   });
   const [guidedGraded, setGuidedGraded] = useState(false);
@@ -45,17 +74,25 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
   // Persist guided config/progress to localStorage
   const guidedStorageKey = `memoria:guided:${article.id}`;
   useEffect(() => {
-    if (guidedConfig) {
-      localStorage.setItem(`${guidedStorageKey}:config`, JSON.stringify(guidedConfig));
-      localStorage.setItem(`${guidedStorageKey}:step`, String(guidedStep));
-    } else {
-      localStorage.removeItem(`${guidedStorageKey}:config`);
-      localStorage.removeItem(`${guidedStorageKey}:step`);
+    try {
+      if (guidedConfig) {
+        localStorage.setItem(`${guidedStorageKey}:config`, JSON.stringify(guidedConfig));
+        localStorage.setItem(`${guidedStorageKey}:step`, String(guidedStep));
+      } else {
+        localStorage.removeItem(`${guidedStorageKey}:config`);
+        localStorage.removeItem(`${guidedStorageKey}:step`);
+      }
+    } catch (e) {
+      console.warn('保存指导记忆配置失败', e);
     }
   }, [guidedConfig, guidedStep, guidedStorageKey]);
   useEffect(() => {
-    localStorage.setItem(`${guidedStorageKey}:inputs`, JSON.stringify(userInputs));
-  }, [userInputs, guidedStorageKey]);
+    try {
+      localStorage.setItem(`${guidedStorageKey}:inputs`, JSON.stringify(guidedInputs));
+    } catch (e) {
+      console.warn('保存指导记忆输入失败', e);
+    }
+  }, [guidedInputs, guidedStorageKey]);
 
   /** 全篇记忆 */
   const startFull = () => {
@@ -74,6 +111,10 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
 
   /** 随机记忆 */
   const startRandom = () => {
+    if (sentences.length === 0) {
+      alert('本文没有可记忆的句子');
+      return;
+    }
     const count = Math.max(1, Math.ceil(sentences.length * Math.min(1, Math.max(0.01, ratio))));
     const indices = pickRandomIndices(sentences.length, count);
     const items = indices.map(idx => ({
@@ -143,6 +184,29 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
     setMode('menu');
     setGraded(false);
   };
+
+  /* ===== 指导记忆：步骤数据（顶层计算，避免条件 Hook） ===== */
+  // 防止 localStorage 中残留的 guidedStep 越界（配置被替换/缩短后）
+  const guidedEffectiveStep = guidedConfig && guidedConfig.steps.length > 0
+    ? Math.min(Math.max(guidedStep, 0), guidedConfig.steps.length - 1)
+    : 0;
+  const guidedCurrentStep = guidedConfig?.steps[guidedEffectiveStep];
+  // 过滤越界/非法的索引，防止渲染崩溃（含步骤数据损坏的防御）
+  const guidedStepIndices = useMemo(() =>
+    (guidedCurrentStep?.sentenceIndices || []).filter(idx =>
+      Number.isInteger(idx) && idx >= 0 && idx < sentences.length
+    ),
+    [guidedCurrentStep, sentences]
+  );
+  const guidedStepBlanks = useMemo(() =>
+    guidedStepIndices.map(idx => ({
+      correct: sentences[idx],
+      userInput: guidedInputs[`guided-${idx}`] || '',
+      graded: guidedGraded,
+      correctFlag: (guidedInputs[`guided-${idx}`] || '').trim() === sentences[idx].trim(),
+    })),
+    [guidedStepIndices, sentences, guidedInputs, guidedGraded]
+  );
 
   /** 处理句子选择（支持 Shift+点击范围选择） */
   const handleSentenceClick = useCallback((idx: number, e: React.MouseEvent) => {
@@ -263,6 +327,7 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
                       ...styles.sentenceBtn,
                       ...(isSelected ? styles.sentenceBtnSelected : {}),
                     }}
+                    aria-pressed={isSelected}
                     onClick={(e) => handleSentenceClick(idx, e)}
                   >
                     {isSelected ? '✓ ' : ''}{s}
@@ -349,16 +414,16 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
                   const reader = new FileReader();
                   reader.onload = () => {
                     try {
-                      const config = JSON.parse(reader.result as string) as GuideConfig;
-                      if (!config.steps || !Array.isArray(config.steps)) {
-                        alert('无效的配置格式：缺少 steps 数组');
+                      const config = sanitizeGuideConfig(JSON.parse(reader.result as string));
+                      if (!config) {
+                        alert('无效的配置格式：需要包含 steps 数组，每步含字符串 hint 和由非负整数组成的 sentenceIndices');
                         return;
                       }
                       setGuidedConfig(config);
                       setGuidedStep(0);
                       setGuidedGraded(false);
                       setGuidedChecked(false);
-                      setUserInputs({});
+                      setGuidedInputs({});
                     } catch {
                       alert('JSON 解析失败');
                     }
@@ -370,7 +435,12 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
             </label>
             {guidedConfig && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <button style={styles.primaryBtn} onClick={() => setMode('guided')}>
+                <button style={styles.primaryBtn} onClick={() => {
+                  // 重新进入答题页时重置批改状态
+                  setGuidedGraded(false);
+                  setGuidedChecked(false);
+                  setMode('guided');
+                }}>
                   开始记忆（共 {guidedConfig.steps.length} 步）
                 </button>
                 <button style={{
@@ -380,7 +450,7 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
                 }} onClick={() => {
                   if (confirm('确定清除当前记忆进度？这将重置到第一步并清空所有输入。')) {
                     setGuidedStep(0);
-                    setUserInputs({});
+                    setGuidedInputs({});
                     setGuidedGraded(false);
                     setGuidedChecked(false);
                   }
@@ -405,30 +475,13 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
   /** 指导记忆 — 步骤答题界面 */
   if (mode === 'guided') {
     const config = guidedConfig;
-    const step = config?.steps[guidedStep];
-    const stepIndices = step?.sentenceIndices || [];
+    const step = guidedCurrentStep;
+    const stepIndices = guidedStepIndices;
     const firstTargetIdx = stepIndices.length > 0 ? Math.min(...stepIndices) : -1;
     const lastTargetIdx = stepIndices.length > 0 ? Math.max(...stepIndices) : -1;
 
-    // Compute covered vs not-yet-covered sentence indices
-    const coveredIndices = new Set<number>();
     const currentStepIndices = new Set(stepIndices);
-    const previousStepIndices = new Set<number>();
-    if (config) {
-      for (let s = 0; s < config.steps.length; s++) {
-        for (const idx of config.steps[s].sentenceIndices) {
-          coveredIndices.add(idx);
-          if (s < guidedStep) previousStepIndices.add(idx);
-        }
-      }
-    }
-    const stepBlanks = stepIndices.map(idx => ({
-      id: uid(),
-      correct: sentences[idx],
-      userInput: userInputs[`guided-${idx}`] || '',
-      graded: guidedGraded,
-      correctFlag: (userInputs[`guided-${idx}`] || '').trim() === sentences[idx].trim(),
-    }));
+    const stepBlanks = guidedStepBlanks;
 
     /** 渲染分隔符（同部分记忆） */
     const renderDelimiter = (delim: string, key: string | number) => {
@@ -524,7 +577,8 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
               {sentences.map((s, idx) => {
                 const isTarget = currentStepIndices.has(idx);
                 const delim = delimiters[idx] || '';
-                const blankItem = stepBlanks.find(b => b.correct === sentences[idx]);
+                const blankIdx = guidedStepIndices.indexOf(idx);
+                const blankItem = blankIdx >= 0 ? stepBlanks[blankIdx] : undefined;
 
                 // Sentences after last target: always show as empty disabled blank
                 if (lastTargetIdx >= 0 && idx > lastTargetIdx) {
@@ -562,8 +616,9 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
                           <textarea
                             style={styles.articleBlankInput}
                             rows={1}
-                            value={userInputs[`guided-${idx}`] || ''}
-                            onChange={e => setUserInputs({ ...userInputs, [`guided-${idx}`]: e.target.value })}
+                            aria-label={`第 ${idx + 1} 句填空`}
+                            value={guidedInputs[`guided-${idx}`] || ''}
+                            onChange={e => setGuidedInputs({ ...guidedInputs, [`guided-${idx}`]: e.target.value })}
                           />
                         )}
                       </span>
@@ -585,8 +640,9 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
           <div style={styles.guidedStepNav}>
             <button
               style={styles.guidedStepBtn}
-              onClick={() => goToStep(guidedStep - 1)}
-              disabled={guidedStep === 0}
+              aria-label="上一步"
+              onClick={() => goToStep(guidedEffectiveStep - 1)}
+              disabled={guidedEffectiveStep === 0}
             >
               ◀
             </button>
@@ -594,17 +650,19 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
               <input
                 style={styles.guidedStepInput}
                 type="number"
+                aria-label="当前步骤"
                 min={1}
                 max={config?.steps.length || 1}
-                value={guidedStep + 1}
+                value={guidedEffectiveStep + 1}
                 onChange={handleStepInput}
               />
               {' / '}{config?.steps.length || 0}
             </span>
             <button
               style={styles.guidedStepBtn}
-              onClick={() => goToStep(guidedStep + 1)}
-              disabled={!config || guidedStep >= config.steps.length - 1}
+              aria-label="下一步"
+              onClick={() => goToStep(guidedEffectiveStep + 1)}
+              disabled={!config || guidedEffectiveStep >= config.steps.length - 1}
             >
               ▶
             </button>
@@ -634,8 +692,12 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
           <p style={{ color: 'var(--text-description)', marginBottom: 10 }}>请凭记忆输入整篇文章：</p>
           <textarea
             style={{ ...styles.textarea, flex: 1, minHeight: 60 }}
+            aria-label="全文输入"
             value={userInputs[blanks[0]?.id] || ''}
-            onChange={e => setUserInputs({ ...userInputs, [blanks[0].id]: e.target.value })}
+            onChange={e => {
+              const id = blanks[0]?.id;
+              if (id) setUserInputs({ ...userInputs, [id]: e.target.value });
+            }}
           />
         </div>
 
@@ -716,6 +778,7 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
                         <textarea
                           style={styles.articleBlankInput}
                           rows={1}
+                          aria-label={`第 ${idx + 1} 句填空`}
                           value={userInputs[blankItem.id] || ''}
                           onChange={e => setUserInputs({ ...userInputs, [blankItem.id]: e.target.value })}
                         />

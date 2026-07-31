@@ -22,10 +22,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, onD
   const { sidebarPosition, setSidebarPosition, expandOnHoverExit, setExpandOnHoverExit, hidePreviousSentences, setHidePreviousSentences } = useLayoutSettings();
   const { theme, toggleTheme } = useTheme();
 
-  const handleExportAll = () => {
-    // The JsonImportExport component handles this internally
-  };
-
   return (
     <Modal open={open} title="设置" onClose={onClose} wide>
       <div style={styles.container}>

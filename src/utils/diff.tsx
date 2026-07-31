@@ -13,7 +13,7 @@ import { diffChars } from 'diff';
 
 export interface DiffSegment {
   text: string;
-  type: 'correct' | 'incorrect' | 'missing' | 'extra';
+  type: 'correct' | 'missing' | 'extra';
 }
 
 /**
@@ -25,9 +25,6 @@ export function computeDiff(original: string, userInput: string): DiffSegment[] 
   const segments: DiffSegment[] = [];
 
   for (const change of changes) {
-    if (change.added && change.removed) {
-      // diff 库不会同时发生 added + removed
-    }
     if (change.added) {
       // 用户多输入的
       segments.push({ text: change.value, type: 'extra' });
@@ -45,7 +42,6 @@ export function computeDiff(original: string, userInput: string): DiffSegment[] 
 
 const styleMap: Record<DiffSegment['type'], React.CSSProperties> = {
   correct: { color: 'var(--text-green-dark)' },
-  incorrect: { backgroundColor: 'var(--border-red)', textDecoration: 'line-through', color: 'var(--text-red)' },
   missing: { backgroundColor: '#fed7aa', color: 'var(--text-orange)' },
   extra: { color: 'var(--text-red)', textDecoration: 'line-through', backgroundColor: 'var(--bg-danger)' },
 };
