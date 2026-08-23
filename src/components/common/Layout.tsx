@@ -6,7 +6,6 @@ import { useLayoutSettings } from './LayoutContext';
 interface LayoutProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
-  settingsModalOpen: boolean;
   onOpenSettings: () => void;
   children: React.ReactNode;
 }

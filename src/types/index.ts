@@ -76,28 +76,6 @@ export interface BlankItem {
   correctFlag: boolean;
 }
 
-/** 语文记忆会话 */
-export interface ChineseMemorySession {
-  articleId: string;
-  articleTitle: string;
-  /** 'full' | 'partial-random' | 'partial-custom' */
-  mode: string;
-  /** 被抽取作为填空题的句子索引 */
-  blankIndices: number[];
-  blanks: BlankItem[];
-  completed: boolean;
-  score: number;
-}
-
-/** 英语记忆会话 */
-export interface EnglishMemorySession {
-  bookIds: string[];
-  mode: string;
-  blanks: BlankItem[];
-  completed: boolean;
-  score: number;
-}
-
 /* ==================== 导入导出 ==================== */
 
 /** 系统完整数据快照 */

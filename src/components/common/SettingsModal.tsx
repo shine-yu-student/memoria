@@ -140,7 +140,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, onD
             <div>
               <h3 style={styles.sectionTitle}>数据</h3>
               <p style={styles.descText}>
-                在此导入或导出全部数据。导入时按标题合并，同名词书的条目会进行去重。
+                在此导入或导出全部数据。导入时按 id 合并：同 id 的词书/句书条目去重合并，
+                同 id 的文章保留已有内容；缺失 id 的资源自动生成新 id。
               </p>
               <JsonImportExport onImport={onDataChanged} />
             </div>

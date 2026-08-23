@@ -111,8 +111,9 @@ export const ArticleDetailView: React.FC<Props> = ({ article: initialArticle, on
         <div style={styles.headerRight}>
           <SingleExportBtn
             label={article.title}
-            data={article}
             filename={`${article.title}.json`}
+            onBeforeDownload={flushPersist}
+            getData={() => articleRef.current}
           />
           <button style={styles.memoryBtn} onClick={() => {
             // 先落盘未保存的输入，再带着最新内容进入记忆

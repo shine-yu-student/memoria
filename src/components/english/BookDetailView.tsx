@@ -8,7 +8,6 @@ import {
 import { Modal } from '../common/Modal';
 import { SingleExportBtn } from '../common/JsonImportExport';
 import { useLayoutSettings } from '../common/LayoutContext';
-import type { OcrPair } from '../../utils/ocr';
 
 /* ==================== 统一条目类型 ==================== */
 
@@ -217,16 +216,6 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
 
   // Modal 状态
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<EntryItem | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  // OCR 导入状态（保留业务逻辑，UI 已隐藏）
-  const [ocrModalOpen, setOcrModalOpen] = useState(false);
-  const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrResultModalOpen, setOcrResultModalOpen] = useState(false);
-  const [ocrPairs, setOcrPairs] = useState<OcrPair[]>([]);
-  const [ocrImageNames, setOcrImageNames] = useState<string>('');
 
   // JSON 导入状态
   const [jsonImportModalOpen, setJsonImportModalOpen] = useState(false);
@@ -237,7 +226,7 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
   // 表单状态
   const [newEn, setNewEn] = useState('');
   const [newZh, setNewZh] = useState('');
-  const [renameTitle, setRenameTitle] = useState('');
+
 
   const expandedRef = useRef<HTMLDivElement>(null);
 
@@ -347,21 +336,6 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     onDataChange();
   };
 
-  /** 编辑条目 */
-  const handleEdit = () => {
-    if (!editingEntry || !editEn.trim() || !editZh.trim()) return;
-    const updated = {
-      ...book,
-      entries: ('entries' in book ? book.entries : []).map(e =>
-        e.id === editingEntry.id ? { ...e, english: editEn.trim(), chinese: editZh.trim() } : e
-      ),
-    };
-    persist(updated);
-    setEditModalOpen(false);
-    setEditingEntry(null);
-    onDataChange();
-  };
-
   /** 删除条目 */
   const handleDeleteEntry = useCallback((entry: EntryItem) => {
     if (!confirm(`确定删除该${entryLabel}「${entry.english}」？`)) return;
@@ -438,14 +412,6 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     }
   }, []);
 
-  /** 打开编辑弹窗 */
-  const openEdit = (entry: EntryItem) => {
-    setEditingEntry(entry);
-    setEditEn(entry.english);
-    setEditZh(entry.chinese);
-    setEditModalOpen(true);
-  };
-
   const isWordBook = bookType === 'word';
 
   /* ===== JSON 导入 ===== */
@@ -494,37 +460,6 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
     onDataChange();
   };
 
-  /* ===== OCR 导入（保留业务逻辑） ===== */
-  const openOcrUpload = () => { setOcrModalOpen(true); setOcrImageNames(''); };
-  const handleOcrFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const fileList = Array.from(files);
-    setOcrImageNames(fileList.map(f => f.name).join('、'));
-    setOcrLoading(true);
-    try {
-      // 动态导入：tesseract.js 体积大，仅在真正使用 OCR 时加载
-      const { recognizeImages } = await import('../../utils/ocr');
-      const result = await recognizeImages(fileList);
-      setOcrPairs(result.pairs);
-      setOcrLoading(false);
-      setOcrModalOpen(false);
-      setOcrResultModalOpen(true);
-    } catch (err) {
-      setOcrLoading(false);
-      alert(`OCR 识别失败: ${err instanceof Error ? err.message : '未知错误'}`);
-    }
-  };
-  const handleOcrConfirm = () => {
-    if (ocrPairs.length === 0) return;
-    const newEntries = ocrPairs.map(p => ({ id: uid(), english: p.english, chinese: p.chinese }));
-    const updated = { ...book, entries: [...('entries' in book ? book.entries : []), ...newEntries] };
-    persist(updated);
-    setOcrResultModalOpen(false);
-    setOcrPairs([]);
-    onDataChange();
-  };
-
   return (
     <div style={styles.page}>
       {/* Header row: back + title + buttons */}
@@ -538,7 +473,7 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
           <button style={styles.addBtn} onClick={() => { setNewEn(''); setNewZh(''); setAddModalOpen(true); }}>
             ＋ 添加{entryLabel}
           </button>
-          <SingleExportBtn label={book.title} data={book} filename={`${book.title}.json`} />
+          <SingleExportBtn label={book.title} filename={`${book.title}.json`} getData={() => bookRef.current} />
           <button style={styles.jsonImportBtn} onClick={openJsonImport}>📋 从 JSON 导入</button>
           <button style={styles.dangerBtn} onClick={handleDeleteBook}>🗑️ 删除</button>
         </div>
@@ -623,12 +558,12 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
         {jsonParsedEntries.length > 0 && (
           <div style={{ marginTop: 12 }}>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>解析到 <strong>{jsonParsedEntries.length}</strong> 条{entryLabel}：</p>
-            <div style={styles.ocrResultList}>
+            <div style={styles.jsonResultList}>
               {jsonParsedEntries.map((p, i) => (
-                <div key={i} style={styles.ocrResultItem}>
-                  <span style={styles.ocrResultEn}>{p.english}</span>
-                  <span style={styles.ocrResultDivider}>—</span>
-                  <span style={styles.ocrResultZh}>{p.chinese}</span>
+                <div key={i} style={styles.jsonResultItem}>
+                  <span style={styles.jsonResultEn}>{p.english}</span>
+                  <span style={styles.jsonResultDivider}>—</span>
+                  <span style={styles.jsonResultZh}>{p.chinese}</span>
                 </div>
               ))}
             </div>
@@ -643,47 +578,6 @@ export const BookDetailView: React.FC<Props> = ({ book: initialBook, bookType, o
         </div>
       </Modal>
 
-      {/* ===== OCR 弹窗（保留） ===== */}
-      <Modal open={ocrModalOpen} title="📷 从图片导入" onClose={() => setOcrModalOpen(false)}>
-        {ocrLoading ? (
-          <div style={styles.ocrLoading}>
-            <div style={styles.spinner}></div>
-            <p>正在识别图片中的文字，请稍候…</p>
-          </div>
-        ) : (
-          <>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>选择包含单词和中文释义的图片，系统将自动识别。</p>
-            <label style={styles.fileUploadLabel}>
-              <input type="file" accept="image/png,image/jpeg,image/jpg" multiple style={{ display: 'none' }} onChange={handleOcrFiles} />
-              <span style={styles.fileUploadBtn}>📂 选择图片</span>
-            </label>
-            {ocrImageNames && <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text-description)' }}>已选择：{ocrImageNames}</p>}
-          </>
-        )}
-      </Modal>
-
-      <Modal open={ocrResultModalOpen} title="📋 识别结果" onClose={() => setOcrResultModalOpen(false)}>
-        {ocrPairs.length === 0 ? (
-          <p style={{ color: 'var(--text-red)', textAlign: 'center', padding: 20 }}>未能从图片中识别出有效内容。</p>
-        ) : (
-          <>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 12 }}>识别到 <strong>{ocrPairs.length}</strong> 组对应关系：</p>
-            <div style={styles.ocrResultList}>
-              {ocrPairs.map((pair, idx) => (
-                <div key={idx} style={styles.ocrResultItem}>
-                  <span style={styles.ocrResultEn}>{pair.english}</span>
-                  <span style={styles.ocrResultDivider}>—</span>
-                  <span style={styles.ocrResultZh}>{pair.chinese}</span>
-                </div>
-              ))}
-            </div>
-            <div style={styles.formActions}>
-              <button style={styles.cancelBtn} onClick={() => setOcrResultModalOpen(false)}>取消</button>
-              <button style={styles.confirmBtn} onClick={handleOcrConfirm}>确认导入 {ocrPairs.length} 项</button>
-            </div>
-          </>
-        )}
-      </Modal>
     </div>
   );
 };
@@ -875,25 +769,17 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border-strong)', borderRadius: 8, resize: 'vertical',
     boxSizing: 'border-box', lineHeight: 1.5,
   },
-  ocrLoading: {
-    textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)',
-  },
-  spinner: {
-    width: 40, height: 40, border: '4px solid var(--border-default)',
-    borderTopColor: 'var(--border-green)', borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite', margin: '0 auto 16px',
-  },
-  ocrResultList: {
+  jsonResultList: {
     maxHeight: 300, overflowY: 'auto',
     display: 'flex', flexDirection: 'column', gap: 6,
     backgroundColor: 'var(--bg-page)', borderRadius: 8, padding: 12,
   },
-  ocrResultItem: {
+  jsonResultItem: {
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '6px 8px', borderRadius: 6,
     backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-default)',
   },
-  ocrResultEn: { fontWeight: 600, color: 'var(--text-primary)', fontSize: 15 },
-  ocrResultDivider: { color: 'var(--text-muted)', fontSize: 14 },
-  ocrResultZh: { color: 'var(--text-description)', fontSize: 14 },
+  jsonResultEn: { fontWeight: 600, color: 'var(--text-primary)', fontSize: 15 },
+  jsonResultDivider: { color: 'var(--text-muted)', fontSize: 14 },
+  jsonResultZh: { color: 'var(--text-description)', fontSize: 14 },
 };

@@ -75,7 +75,8 @@ export const JsonImportExport: React.FC<JsonImportExportProps> = ({ onImport }) 
       <h2 style={styles.title}>📦 全量导入 / 导出</h2>
       <p style={styles.desc}>
         将系统中的全部文章、词书和句书导出为单个 JSON 文件，或从备份文件恢复。
-        导入时按标题合并：同名的词书/句书条目会合并并去重，不会丢失已有数据。
+        导入时按 id 合并：同 id 的文章保留原有内容，同 id 的词书/句书条目合并去重；
+        缺失 id 的资源会自动生成新 id 后追加，不会丢失已有数据。
       </p>
 
       <div style={styles.actions}>
@@ -102,14 +103,22 @@ export const JsonImportExport: React.FC<JsonImportExportProps> = ({ onImport }) 
 
 interface SingleExportProps {
   label: string;
-  data: unknown;
+  /** 静态数据（与 getData 二选一） */
+  data?: unknown;
+  /** 点击导出时实时获取数据，确保拿到最新值（配合 onBeforeDownload 先落盘未保存内容） */
+  getData?: () => unknown;
+  /** 点击导出前先执行（如 flush 防抖保存） */
+  onBeforeDownload?: () => void;
   filename: string;
 }
 
-export const SingleExportBtn: React.FC<SingleExportProps> = ({ label, data, filename }) => (
+export const SingleExportBtn: React.FC<SingleExportProps> = ({ label, data, getData, filename, onBeforeDownload }) => (
   <button
     style={sBtn}
-    onClick={() => downloadJSON(data, filename)}
+    onClick={() => {
+      onBeforeDownload?.();
+      downloadJSON(getData ? getData() : data, filename);
+    }}
   >
     ⬇️ 导出 {label}
   </button>

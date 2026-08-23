@@ -11,7 +11,12 @@ import { Modal } from '../common/Modal';
 
 type PageView = 'list' | 'detail' | 'memory';
 
-export const BookManager: React.FC = () => {
+interface BookManagerProps {
+  /** 数据版本号：外部数据变更（如设置中全量导入）时递增，触发列表重新加载（不重挂载，保留当前视图与记忆会话） */
+  dataVersion?: number;
+}
+
+export const BookManager: React.FC<BookManagerProps> = ({ dataVersion = 0 }) => {
   const [wordBooks, setWordBooks] = useState<WordBook[]>([]);
   const [sentenceBooks, setSentenceBooks] = useState<SentenceBook[]>([]);
   const [view, setView] = useState<PageView>('list');
@@ -33,21 +38,39 @@ export const BookManager: React.FC = () => {
   const [createSentenceModal, setCreateSentenceModal] = useState(false);
   const [newBookName, setNewBookName] = useState('');
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    // 外部数据变更后，清理选中集中已不存在的条目 id
+    pruneSelections();
+  }, [dataVersion]);
 
   const refresh = () => {
     setWordBooks(loadWordBooks());
     setSentenceBooks(loadSentenceBooks());
   };
 
+  // 标题可能来自旧版本/外部导入，用 String() 兜底避免非字符串字段直接崩溃
   const filteredWordBooks = wordBooks.filter(b =>
-    b.title.toLowerCase().includes(searchQuery.toLowerCase())
+    String(b.title ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
   const filteredSentenceBooks = sentenceBooks.filter(b =>
-    b.title.toLowerCase().includes(searchQuery.toLowerCase())
+    String(b.title ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const totalSelected = selectedWordEntryIds.size + selectedSentenceEntryIds.size;
+
+  /** 清理选中集中已不存在的条目 id（删除词书/条目后 totalSelected 不再虚高） */
+  const pruneSelections = () => {
+    const wb = loadWordBooks();
+    const sb = loadSentenceBooks();
+    const wordAlive = new Set(wb.flatMap(b => b.entries.map(e => e.id)));
+    const sentAlive = new Set(sb.flatMap(b => b.entries.map(e => e.id)));
+    setSelectedWordEntryIds(prev => (prev.size === 0 ? prev : new Set([...prev].filter(id => wordAlive.has(id)))));
+    setSelectedSentenceEntryIds(prev => (prev.size === 0 ? prev : new Set([...prev].filter(id => sentAlive.has(id)))));
+    if (lastClickedEntryIdRef.current && !wordAlive.has(lastClickedEntryIdRef.current) && !sentAlive.has(lastClickedEntryIdRef.current)) {
+      lastClickedEntryIdRef.current = null;
+    }
+  };
 
   /** 创建词书 */
   const handleCreateWordBook = () => {
@@ -87,25 +110,21 @@ export const BookManager: React.FC = () => {
     setWordBooks(wb);
     setSentenceBooks(sb);
     // 清理选中集中已不存在的条目 id（删除词书/条目后 totalSelected 不再虚高）
-    const wordAlive = new Set(wb.flatMap(b => b.entries.map(e => e.id)));
-    const sentAlive = new Set(sb.flatMap(b => b.entries.map(e => e.id)));
-    setSelectedWordEntryIds(prev => (prev.size === 0 ? prev : new Set([...prev].filter(id => wordAlive.has(id)))));
-    setSelectedSentenceEntryIds(prev => (prev.size === 0 ? prev : new Set([...prev].filter(id => sentAlive.has(id)))));
-    lastClickedEntryIdRef.current = (lastClickedEntryIdRef.current && (wordAlive.has(lastClickedEntryIdRef.current) || sentAlive.has(lastClickedEntryIdRef.current))) ? lastClickedEntryIdRef.current : null;
+    pruneSelections();
   };
 
   const handleDeleteWordBook = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const book = wordBooks.find(b => b.id === id);
     if (!book) return;
-    if (confirm(`确定删除词书「${book.title}」？`)) { deleteWordBook(id); refresh(); }
+    if (confirm(`确定删除词书「${book.title}」？`)) { deleteWordBook(id); refresh(); pruneSelections(); }
   };
 
   const handleDeleteSentenceBook = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const book = sentenceBooks.find(b => b.id === id);
     if (!book) return;
-    if (confirm(`确定删除句书「${book.title}」？`)) { deleteSentenceBook(id); refresh(); }
+    if (confirm(`确定删除句书「${book.title}」？`)) { deleteSentenceBook(id); refresh(); pruneSelections(); }
   };
 
   /** Toggle select mode */

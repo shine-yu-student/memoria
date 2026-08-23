@@ -8,7 +8,12 @@ import { Modal } from '../common/Modal';
 
 type PageView = 'list' | 'detail' | 'memory';
 
-export const ArticleManager: React.FC = () => {
+interface ArticleManagerProps {
+  /** 数据版本号：外部数据变更（如设置中全量导入）时递增，触发列表重新加载（不重挂载，保留当前视图与记忆会话） */
+  dataVersion?: number;
+}
+
+export const ArticleManager: React.FC<ArticleManagerProps> = ({ dataVersion = 0 }) => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [view, setView] = useState<PageView>('list');
@@ -21,12 +26,13 @@ export const ArticleManager: React.FC = () => {
 
   useEffect(() => {
     setArticles(loadArticles());
-  }, []);
+  }, [dataVersion]);
 
   const refresh = () => setArticles(loadArticles());
 
+  // 标题可能来自旧版本/外部导入，用 String() 兜底避免非字符串字段直接崩溃
   const filteredArticles = articles.filter(a =>
-    a.title.toLowerCase().includes(searchQuery.toLowerCase())
+    String(a.title ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleDelete = (id: string, e: React.MouseEvent) => {

@@ -5,6 +5,7 @@
  */
 
 import type { Article, WordBook, SentenceBook, MemoriaData } from '../types';
+import { uid } from '../types';
 
 const KEYS = {
   articles: 'memoria:articles',
@@ -30,6 +31,55 @@ function saveJSON<T>(key: string, data: T): void {
     // 配额满/隐私模式等场景不崩溃，仅告警
     console.warn(`保存 localStorage[${key}] 失败`, e);
   }
+}
+
+/* ==================== 导入数据清洗 ==================== */
+
+/**
+ * 将任意值安全地规范化为合法文章列表。
+ * id 缺省/非法时自动生成（避免导入数据被静默丢弃）；title 缺省时兜底为「未命名文章」；
+ * content 兜底为空串、sentences 只保留字符串。
+ * 返回空数组表示输入不是数组（调用方不应继续遍历）。
+ */
+function normalizeArticles(arr: unknown): Article[] {
+  if (!Array.isArray(arr)) return [];
+  const out: Article[] = [];
+  for (const item of arr) {
+    if (!item || typeof item !== 'object') continue;
+    const obj = item as Record<string, unknown>;
+    out.push({
+      id: typeof obj.id === 'string' && obj.id ? obj.id : uid(),
+      title: typeof obj.title === 'string' ? obj.title : '未命名文章',
+      content: typeof obj.content === 'string' ? obj.content : '',
+      sentences: Array.isArray(obj.sentences)
+        ? obj.sentences.filter((s): s is string => typeof s === 'string')
+        : [],
+      createdAt: typeof obj.createdAt === 'number' ? obj.createdAt : Date.now(),
+    });
+  }
+  return out;
+}
+
+/**
+ * 将任意值安全地规范化为合法词条/句条列表。
+ * english/chinese 必须为非空字符串，否则视为损坏条目丢弃。
+ */
+function normalizeEntries(arr: unknown): { id: string; english: string; chinese: string }[] {
+  if (!Array.isArray(arr)) return [];
+  const out: { id: string; english: string; chinese: string }[] = [];
+  for (const item of arr) {
+    if (!item || typeof item !== 'object') continue;
+    const obj = item as Record<string, unknown>;
+    const english = typeof obj.english === 'string' ? obj.english.trim() : '';
+    const chinese = typeof obj.chinese === 'string' ? obj.chinese.trim() : '';
+    if (!english || !chinese) continue;
+    out.push({
+      id: typeof obj.id === 'string' && obj.id ? obj.id : uid(),
+      english,
+      chinese,
+    });
+  }
+  return out;
 }
 
 /* ==================== 文章 ==================== */
@@ -140,50 +190,66 @@ export interface ImportStats {
 
 /**
  * 导入系统全部数据（按 id 合并：同 id 词书/句书条目合并去重；同 id 文章保留原有不覆盖）。
+ * 缺失 id 的文章/词书/句书自动生成新 id 后追加；标题缺失或非法的资源跳过。
  * 返回统计信息供 UI 提示，避免"静默丢弃数据"。
+ *
+ * 对传入数据做整体健壮性处理：非数组字段视为空、条目级校验，
+ * 防止畸形/损坏的备份文件导致半导入或后续渲染崩溃。
  */
 export function importAll(data: MemoriaData): ImportStats {
   const stats: ImportStats = { added: 0, merged: 0, skipped: 0 };
 
   // --- 文章：按 id 合并；同 id 保留原有（内容通常唯一，不自动覆盖） ---
   const existingArticles = loadArticles();
-  const incomingArticles = data.articles || [];
   const articleMap = new Map(existingArticles.map(a => [a.id, a]));
+  const incomingArticles = normalizeArticles(data?.articles);
   for (const article of incomingArticles) {
-    if (article && typeof article === 'object' && typeof article.id === 'string') {
-      if (articleMap.has(article.id)) {
-        stats.skipped += 1;
-      } else {
-        articleMap.set(article.id, article);
-        stats.added += 1;
-      }
+    if (articleMap.has(article.id)) {
+      stats.skipped += 1;
+    } else {
+      articleMap.set(article.id, article);
+      stats.added += 1;
     }
   }
   saveArticles(Array.from(articleMap.values()));
 
   // --- 词书：按 id 合并，条目去重（按 english 字段） ---
   const existingWordBooks = loadWordBooks();
-  const incomingWordBooks = data.wordBooks || [];
   const wordBookMap = new Map(existingWordBooks.map(b => [b.id, b]));
+  const incomingWordBooks = Array.isArray(data?.wordBooks) ? data.wordBooks : [];
   for (const book of incomingWordBooks) {
-    if (!book || typeof book !== 'object' || typeof book.id !== 'string' || !Array.isArray(book.entries)) {
+    if (!book || typeof book !== 'object') {
       stats.skipped += 1;
       continue;
     }
-    const existing = wordBookMap.get(book.id);
+    const obj = book as unknown as Record<string, unknown>;
+    // id 缺省/非法时自动生成，避免导入数据被静默丢弃
+    const id = typeof obj.id === 'string' && obj.id ? obj.id : uid();
+    if (typeof obj.title !== 'string' || !obj.title) {
+      stats.skipped += 1;
+      continue;
+    }
+    const entries = normalizeEntries(obj.entries);
+    const existing = wordBookMap.get(id);
     if (existing) {
-      const entryMap = new Map(existing.entries.map(e => [e.english, e]));
-      for (const entry of book.entries) {
-        // 元素级校验：跳过损坏的条目，避免半导入
-        if (!entry || typeof entry !== 'object') continue;
+      // 合并时对已有条目同样做规范化，顺带清理历史损坏数据
+      const entryMap = new Map(normalizeEntries(existing.entries).map(e => [e.english, e]));
+      for (const entry of entries) {
         if (!entryMap.has(entry.english)) {
           entryMap.set(entry.english, entry);
         }
       }
-      wordBookMap.set(book.id, { ...existing, entries: Array.from(entryMap.values()) });
+      wordBookMap.set(id, { ...existing, entries: Array.from(entryMap.values()) });
       stats.merged += 1;
     } else {
-      wordBookMap.set(book.id, book);
+      // 新书同样按 english 去重，与合并分支语义一致，避免导入重复闪卡
+      const entryMap = new Map(entries.map(e => [e.english, e]));
+      wordBookMap.set(id, {
+        id,
+        title: obj.title,
+        entries: Array.from(entryMap.values()),
+        createdAt: typeof obj.createdAt === 'number' ? obj.createdAt : Date.now(),
+      });
       stats.added += 1;
     }
   }
@@ -191,27 +257,40 @@ export function importAll(data: MemoriaData): ImportStats {
 
   // --- 句书：按 id 合并，条目去重（按 english 字段） ---
   const existingSentenceBooks = loadSentenceBooks();
-  const incomingSentenceBooks = data.sentenceBooks || [];
   const sentenceBookMap = new Map(existingSentenceBooks.map(b => [b.id, b]));
+  const incomingSentenceBooks = Array.isArray(data?.sentenceBooks) ? data.sentenceBooks : [];
   for (const book of incomingSentenceBooks) {
-    if (!book || typeof book !== 'object' || typeof book.id !== 'string' || !Array.isArray(book.entries)) {
+    if (!book || typeof book !== 'object') {
       stats.skipped += 1;
       continue;
     }
-    const existing = sentenceBookMap.get(book.id);
+    const obj = book as unknown as Record<string, unknown>;
+    // id 缺省/非法时自动生成，避免导入数据被静默丢弃
+    const id = typeof obj.id === 'string' && obj.id ? obj.id : uid();
+    if (typeof obj.title !== 'string' || !obj.title) {
+      stats.skipped += 1;
+      continue;
+    }
+    const entries = normalizeEntries(obj.entries);
+    const existing = sentenceBookMap.get(id);
     if (existing) {
-      const entryMap = new Map(existing.entries.map(e => [e.english, e]));
-      for (const entry of book.entries) {
-        // 元素级校验：跳过损坏的条目，避免半导入
-        if (!entry || typeof entry !== 'object') continue;
+      const entryMap = new Map(normalizeEntries(existing.entries).map(e => [e.english, e]));
+      for (const entry of entries) {
         if (!entryMap.has(entry.english)) {
           entryMap.set(entry.english, entry);
         }
       }
-      sentenceBookMap.set(book.id, { ...existing, entries: Array.from(entryMap.values()) });
+      sentenceBookMap.set(id, { ...existing, entries: Array.from(entryMap.values()) });
       stats.merged += 1;
     } else {
-      sentenceBookMap.set(book.id, book);
+      // 新书同样按 english 去重，与合并分支语义一致，避免导入重复闪卡
+      const entryMap = new Map(entries.map(e => [e.english, e]));
+      sentenceBookMap.set(id, {
+        id,
+        title: obj.title,
+        entries: Array.from(entryMap.values()),
+        createdAt: typeof obj.createdAt === 'number' ? obj.createdAt : Date.now(),
+      });
       stats.added += 1;
     }
   }

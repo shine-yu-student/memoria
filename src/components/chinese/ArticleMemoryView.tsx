@@ -96,6 +96,10 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
 
   /** 全篇记忆 */
   const startFull = () => {
+    if (!article.content || !article.content.trim()) {
+      alert('文章内容为空，请先在详情页输入文章正文');
+      return;
+    }
     setMode('full');
     const blank: BlankItem = {
       id: uid(),
@@ -604,7 +608,7 @@ ${sentences.map((s, i) => `  ${i}: ${s}`).join('\n')}
                     {renderDelimiter(delim, `d-${idx}`)}
                     {isTarget && blankItem ? (
                       <span style={styles.blankWrapper}>
-                        {guidedGraded && blankItem.userInput.trim() ? (
+                        {guidedGraded ? (
                           <span style={{
                             ...styles.articleBlankDisplay,
                             ...(blankItem.correctFlag ? styles.blankCorrect : styles.blankWrong),

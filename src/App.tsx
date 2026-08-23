@@ -11,10 +11,12 @@ import { SettingsModal } from './components/common/SettingsModal';
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('chinese');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  // 数据版本号：数据变更时递增，通知各管理器重新加载数据；不重挂载组件，
+  // 避免全量导入等操作打断进行中的记忆会话或未保存的编辑
+  const [dataVersion, setDataVersion] = useState(0);
 
   const handleDataChanged = () => {
-    setRefreshKey(k => k + 1);
+    setDataVersion(v => v + 1);
   };
 
   return (
@@ -25,10 +27,9 @@ const App: React.FC = () => {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onOpenSettings={() => setSettingsOpen(true)}
-            settingsModalOpen={settingsOpen}
           >
-            {activeTab === 'chinese' && <ArticleManager key={`chinese-${refreshKey}`} />}
-            {activeTab === 'english' && <BookManager key={`english-${refreshKey}`} />}
+            {activeTab === 'chinese' && <ArticleManager dataVersion={dataVersion} />}
+            {activeTab === 'english' && <BookManager dataVersion={dataVersion} />}
           </Layout>
           <SettingsModal
             open={settingsOpen}

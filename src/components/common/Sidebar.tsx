@@ -41,6 +41,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onOpen
     }
   }, [expandOnHoverExit, collapse]);
 
+  // 卸载时清理未触发的折叠定时器，避免卸载后 setState
+  useEffect(() => () => {
+    if (expandTimeoutRef.current) clearTimeout(expandTimeoutRef.current);
+  }, []);
+
   // Click-outside listener
   useEffect(() => {
     if (!expanded || expandOnHoverExit !== 'click-outside') return;

@@ -1,6 +1,4 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { useLayoutSettings } from '../common/LayoutContext';
-import { SIDEBAR_COLLAPSED } from '../common/Sidebar';
 
 interface Props {
   onBack: () => void;
@@ -42,8 +40,6 @@ function formatTime(seconds: number): string {
 /* ==================== 组件 ==================== */
 
 export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) => {
-  const { sidebarPosition } = useLayoutSettings();
-
   // ----- Timer -----
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -62,12 +58,6 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
   const allEntriesRef = useRef<FlashcardEntry[]>([]);
   const wrongEntriesRef = useRef<FlashcardEntry[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const [resultStats, setResultStats] = useState<{
-    total: number;
-    firstPassCorrect: number;
-    afterRetestCorrect: number;
-  }>({ total: 0, firstPassCorrect: 0, afterRetestCorrect: 0 });
 
   const isRetestRef = useRef(false);
 
@@ -182,7 +172,6 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
 
     setElapsed(0);
     setProgress({ done: 0, total: shuffled.length, wrong: 0 });
-    setResultStats({ total: shuffled.length, firstPassCorrect: 0, afterRetestCorrect: 0 });
 
     const first = queueRef.current.shift()!;
     setCurrentEntry(first);
@@ -218,15 +207,9 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
   if (phase === 'flashcard') {
     const isWrongPhase = flashPhase === 'wrong-reveal';
     const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
-    const isLeft = sidebarPosition === 'left';
-    const sidebarW = SIDEBAR_COLLAPSED;
 
     return (
-      <div style={{
-        ...styles.flashcardPage,
-        left: isLeft ? sidebarW : 0,
-        right: isLeft ? 0 : sidebarW,
-      }}>
+      <div style={styles.flashcardPage}>
         <div style={styles.topBar}>
           <button style={styles.miniBackBtn} onClick={onBack}>← 返回</button>
           <div style={styles.progressWrap}>
@@ -282,13 +265,9 @@ export const EnglishMemoryView: React.FC<Props> = ({ onBack, initialEntries }) =
 
   /* ==================== 渲染：结果 ==================== */
   if (phase === 'result') {
-    const isLeft = sidebarPosition === 'left';
-    const sidebarW = SIDEBAR_COLLAPSED;
     return (
       <div style={{
         ...styles.flashcardPage,
-        left: isLeft ? sidebarW : 0,
-        right: isLeft ? 0 : sidebarW,
         justifyContent: 'center',
         alignItems: 'center',
       }}>
