@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Article, BlankItem, GuideConfig, GuideStep } from '../../types';
 import { uid } from '../../types';
-import { pickRandomIndices, extractDelimiters } from '../../utils/splitter';
+import { pickRandomIndices, extractDelimiters, splitIntoSentences } from '../../utils/splitter';
 import { CompareResult } from '../common/CompareResult';
 import { useLayoutSettings } from '../common/LayoutContext';
 
@@ -67,7 +67,8 @@ export const ArticleMemoryView: React.FC<Props> = ({ article, onBack }) => {
   const [guidedGraded, setGuidedGraded] = useState(false);
   const [guidedChecked, setGuidedChecked] = useState(false);
 
-  const sentences = article.sentences;
+  // 由正文实时切分：正文是唯一数据源，避免已存储的 sentences 与当前切分规则不一致
+  const sentences = useMemo(() => splitIntoSentences(article.content), [article.content]);
   // 原始分隔符
   const delimiters = useMemo(() => extractDelimiters(article.content, sentences), [article.content, sentences]);
 
