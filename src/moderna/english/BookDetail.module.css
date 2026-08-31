@@ -1,0 +1,75 @@
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-s-2);
+  align-items: flex-start;
+}
+
+/*
+ * 就地内联展开的条目。
+ * 旧实现是 position:fixed 弹层 + 约 35 行手写视口碰撞数学（含硬编码的 260 估计高度），
+ * 还要用 250ms setTimeout 兜底 animationend。改成 layout 内联展开后：
+ * 布局交给浏览器，卸载交给 AnimatePresence，那段代码全部消失。
+ */
+.chip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-s-2);
+  min-width: 120px;
+  max-width: 100%;
+  padding: var(--m-s-2) var(--m-s-3);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-md);
+  background-color: var(--m-bg-surface);
+  box-shadow: var(--m-shadow-1);
+  cursor: pointer;
+}
+
+.chipSelected {
+  border-color: var(--m-accent);
+  background-color: var(--m-accent-soft);
+}
+
+.chipLabel {
+  font-size: var(--m-fs-base);
+  color: var(--m-text);
+  word-break: break-word;
+}
+
+.chipMeaning {
+  font-size: var(--m-fs-xs);
+  color: var(--m-text-muted);
+  word-break: break-word;
+}
+
+/* AnimatePresence 内部：height 动画需要 overflow hidden */
+.editorWrap {
+  overflow: hidden;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-s-2);
+  padding-top: var(--m-s-2);
+  border-top: 1px solid var(--m-border);
+}
+
+.editorActions {
+  display: flex;
+  gap: var(--m-s-2);
+  justify-content: flex-end;
+}
+
+.addRow {
+  display: flex;
+  gap: var(--m-s-2);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: var(--m-s-5);
+}
+
+.addField {
+  flex: 1;
+  min-width: 160px;
+}

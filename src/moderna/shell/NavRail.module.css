@@ -1,0 +1,59 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m-s-2);
+  height: 100%;
+  padding: var(--m-s-4) 0;
+  background-color: var(--m-bg-surface);
+  border-right: 1px solid var(--m-border);
+}
+
+.item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: var(--m-r-lg);
+  background: transparent;
+  color: var(--m-text-muted);
+  cursor: pointer;
+  font-size: var(--m-fs-xs);
+  font-family: inherit;
+}
+
+.itemActive {
+  color: var(--m-accent-text);
+  font-weight: 600;
+}
+
+/* 由 layoutId 驱动的滑块，在所有导航项间平滑滑动 */
+.indicator {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--m-r-lg);
+  background-color: var(--m-accent-soft);
+  z-index: -1;
+}
+
+.icon {
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  line-height: 1.25;
+  font-size: 20px;
+}
+
+.label {
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+.spacer {
+  flex: 1;
+}

@@ -1,0 +1,65 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-3);
+  padding: var(--m-s-5) var(--m-s-6) var(--m-s-4);
+  border-bottom: 1px solid var(--m-border);
+  background-color: var(--m-bg-surface);
+}
+
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--m-fs-2xl);
+  font-weight: 700;
+  color: var(--m-text);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: var(--m-fs-sm);
+  color: var(--m-text-muted);
+}
+
+.headerActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-2);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--m-s-6);
+}
+
+/* 无头部的整页滚动（记忆页用） */
+.bodyBare {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/*
+ * 下钻动画的容器。AnimatePresence mode="wait" 会先卸载旧页再挂载新页，
+ * 这里必须让新旧页在同一网格单元内重叠，否则切换瞬间会塌高。
+ */
+.viewport {
+  position: absolute;
+  inset: 0;
+}

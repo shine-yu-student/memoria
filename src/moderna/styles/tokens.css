@@ -1,0 +1,182 @@
+/* ==========================================================
+   Moderna 设计令牌
+   ----------------------------------------------------------
+   全部收口在 html[data-ui="modern"] 之下，物理上不可能影响经典界面。
+   旧令牌（--bg-* / --text-* / --border-*）保持全局不动，供经典界面的
+   内联样式继续使用；新令牌一律用 --m-* 前缀，两套共存于 :root。
+
+   深色变体挂到既有的 [data-theme] 属性（ThemeProvider 已写在 <html> 上），
+   因此主题在两套界面间共享。
+   ========================================================== */
+
+html[data-ui="modern"] {
+  color-scheme: light;
+
+  /* ---- 表面（三层：画布 / 卡片 / 次级；外加内凹层） ---- */
+  --m-bg-canvas: #f5f6f9;
+  --m-bg-surface: #ffffff;
+  --m-bg-subtle: #eef0f4;
+  --m-bg-inset: #f2f4f8;
+  --m-bg-overlay: rgba(15, 23, 42, 0.42);
+
+  /* ---- 强调色（由经典界面的钢蓝 #5b7a9a 演变而来，保留冷色系识别度） ---- */
+  --m-accent: #4f6bed;
+  --m-accent-hover: #3f57d6;
+  --m-accent-active: #3649bd;
+  --m-accent-soft: #eef1fe;
+  --m-accent-border: #c9d2fb;
+  --m-accent-text: #3b4fb8;
+  --m-on-accent: #ffffff;
+
+  /* ---- 文字 ---- */
+  --m-text: #0e1726;
+  --m-text-secondary: #55607a;
+  --m-text-muted: #8a94a8;
+  --m-text-inverse: #ffffff;
+
+  /* ---- 边框 ---- */
+  --m-border: #e4e7ee;
+  --m-border-strong: #cfd5e0;
+  --m-border-accent: #4f6bed;
+
+  /* ---- 语义色 ---- */
+  --m-success: #16a34a;
+  --m-success-soft: #e7f7ee;
+  --m-danger: #dc2626;
+  --m-danger-soft: #fdecec;
+  --m-warning: #d97706;
+  --m-warning-soft: #fdf3e6;
+
+  /* ---- 层级阴影（双层，制造真实浮起感） ---- */
+  --m-shadow-1: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --m-shadow-2: 0 2px 4px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.07);
+  --m-shadow-3: 0 8px 24px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.06);
+  --m-shadow-4: 0 16px 48px rgba(16, 24, 40, 0.18), 0 4px 12px rgba(16, 24, 40, 0.08);
+  --m-ring: 0 0 0 3px rgba(79, 107, 237, 0.28);
+
+  /* ---- 圆角（比经典的 4/6/8/10/12/16/20 阶梯更大更柔） ---- */
+  --m-r-sm: 6px;
+  --m-r-md: 10px;
+  --m-r-lg: 14px;
+  --m-r-xl: 18px;
+  --m-r-2xl: 24px;
+  --m-r-pill: 999px;
+
+  /* ---- 间距（沿用 4 基准） ---- */
+  --m-s-1: 4px;
+  --m-s-2: 8px;
+  --m-s-3: 12px;
+  --m-s-4: 16px;
+  --m-s-5: 20px;
+  --m-s-6: 24px;
+  --m-s-8: 32px;
+  --m-s-10: 40px;
+  --m-s-12: 48px;
+
+  /* ---- 字号 ---- */
+  --m-fs-xs: 12px;
+  --m-fs-sm: 13px;
+  --m-fs-base: 14px;
+  --m-fs-md: 15px;
+  --m-fs-lg: 16px;
+  --m-fs-xl: 18px;
+  --m-fs-2xl: 20px;
+  --m-fs-3xl: 24px;
+  --m-fs-4xl: 30px;
+  --m-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---- 动效时序（与 motion/presets.ts 镜像，改一处要改两处） ---- */
+  --m-dur-fast: 140ms;
+  --m-dur-base: 220ms;
+  --m-dur-slow: 340ms;
+  --m-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --m-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --m-ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- 布局 ---- */
+  --m-topbar-h: 60px;
+  --m-rail-w: 72px;
+
+  /* ---- 滚动条 ---- */
+  --m-scrollbar-thumb: #c7cddb;
+  --m-scrollbar-thumb-hover: #9aa3b8;
+}
+
+html[data-ui="modern"][data-theme="dark"] {
+  color-scheme: dark;
+
+  --m-bg-canvas: #0b0f17;
+  --m-bg-surface: #131a25;
+  --m-bg-subtle: #1a2230;
+  --m-bg-inset: #0f151f;
+  --m-bg-overlay: rgba(0, 0, 0, 0.62);
+
+  --m-accent: #6d7dff;
+  --m-accent-hover: #8090ff;
+  --m-accent-active: #5a6af0;
+  --m-accent-soft: #1a2142;
+  --m-accent-border: #2f3a66;
+  --m-accent-text: #a3b0ff;
+  --m-on-accent: #ffffff;
+
+  --m-text: #e8edf5;
+  --m-text-secondary: #9aa6b8;
+  --m-text-muted: #6b7787;
+
+  --m-border: #232c3b;
+  --m-border-strong: #33405a;
+
+  --m-success: #34d399;
+  --m-success-soft: #10281f;
+  --m-danger: #f87171;
+  --m-danger-soft: #2a1416;
+  --m-warning: #fbbf24;
+  --m-warning-soft: #2a2011;
+
+  --m-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --m-shadow-2: 0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --m-shadow-3: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --m-shadow-4: 0 16px 48px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --m-ring: 0 0 0 3px rgba(109, 125, 255, 0.34);
+
+  --m-scrollbar-thumb: #2b3547;
+  --m-scrollbar-thumb-hover: #3c4a63;
+}
+
+/* ---------- 仅在 modern 下生效的全局覆盖 ---------- */
+
+html[data-ui="modern"] body {
+  background-color: var(--m-bg-canvas);
+  color: var(--m-text);
+  line-height: 1.6;
+  transition: background-color 220ms var(--m-ease-std), color 220ms var(--m-ease-std);
+}
+
+html[data-ui="modern"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+html[data-ui="modern"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html[data-ui="modern"] ::-webkit-scrollbar-thumb {
+  background: var(--m-scrollbar-thumb);
+  border-radius: var(--m-r-pill);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+html[data-ui="modern"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--m-scrollbar-thumb-hover);
+}
+
+/* 现代界面自带焦点环（经典界面保留浏览器默认） */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-ui="modern"] :focus-visible {
+    outline: none;
+    box-shadow: var(--m-ring);
+    transition: box-shadow 140ms var(--m-ease-out);
+  }
+}

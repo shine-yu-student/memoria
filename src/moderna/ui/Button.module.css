@@ -1,0 +1,107 @@
+/*
+ * 注意：本文件绝不在 button 上声明 transform 的 CSS transition。
+ * 经典界面的 `button { transition: opacity .15s, transform .1s }` 已被限定作用域，
+ * 但若在 CSS Modules 里重新引入同样的规则，framer 每帧改写的内联 transform
+ * 会被浏览器二次补间，导致 whileTap 反馈发糊、layout 动画抖动。
+ * 按下反馈一律交给 framer 的 whileTap。
+ */
+
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--m-r-md);
+  font-family: inherit;
+  font-size: var(--m-fs-md);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.base:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sm {
+  padding: 6px 12px;
+  font-size: var(--m-fs-sm);
+}
+
+.md {
+  padding: 9px 18px;
+}
+
+.lg {
+  padding: 12px 24px;
+  font-size: var(--m-fs-lg);
+}
+
+/* ---- 变体 ---- */
+
+.primary {
+  background-color: var(--m-accent);
+  color: var(--m-on-accent);
+  box-shadow: var(--m-shadow-1);
+}
+
+.secondary {
+  background-color: var(--m-bg-surface);
+  border-color: var(--m-border);
+  color: var(--m-text);
+}
+
+.subtle {
+  background-color: var(--m-bg-subtle);
+  color: var(--m-text-secondary);
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--m-text-secondary);
+}
+
+.danger {
+  background-color: var(--m-danger);
+  color: #fff;
+}
+
+.dangerGhost {
+  background-color: transparent;
+  border-color: var(--m-danger);
+  color: var(--m-danger);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .base {
+    transition: background-color var(--m-dur-fast) var(--m-ease-std),
+      border-color var(--m-dur-fast) var(--m-ease-std),
+      color var(--m-dur-fast) var(--m-ease-std);
+  }
+
+  .primary:hover:not(:disabled) {
+    background-color: var(--m-accent-hover);
+  }
+
+  .secondary:hover:not(:disabled),
+  .ghost:hover:not(:disabled) {
+    background-color: var(--m-bg-subtle);
+    color: var(--m-text);
+  }
+
+  .subtle:hover:not(:disabled) {
+    background-color: var(--m-border);
+  }
+
+  .danger:hover:not(:disabled) {
+    filter: brightness(0.94);
+  }
+
+  .dangerGhost:hover:not(:disabled) {
+    background-color: var(--m-danger-soft);
+  }
+}

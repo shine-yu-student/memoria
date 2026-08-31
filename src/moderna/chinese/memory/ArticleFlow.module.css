@@ -1,0 +1,110 @@
+.article {
+  font-size: 17px;
+  line-height: 2.1;
+  color: var(--m-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sentence {
+  cursor: pointer;
+  border-radius: var(--m-r-sm);
+  padding: 1px 2px;
+}
+
+.sentenceSelected {
+  background-color: var(--m-accent-soft);
+  color: var(--m-accent-text);
+  font-weight: 600;
+}
+
+/* 分隔符：原文标点按原样呈现 */
+.punct {
+  white-space: pre-wrap;
+}
+
+/* 空格输入框 */
+.blank {
+  display: inline-block;
+  min-width: 160px;
+  vertical-align: middle;
+}
+
+.blankInput {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2px 8px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--m-text);
+  background-color: var(--m-bg-inset);
+  border: none;
+  border-bottom: 2px solid var(--m-border-strong);
+  border-radius: 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+}
+
+.blankInput:focus {
+  border-bottom-color: var(--m-accent);
+}
+
+.blankDisplay {
+  display: inline-block;
+  min-width: 60px;
+  padding: 2px 8px;
+  border-bottom: 2px solid var(--m-border-strong);
+}
+
+.blankCorrect {
+  color: var(--m-success);
+  border-bottom-color: var(--m-success);
+  background-color: var(--m-success-soft);
+}
+
+.blankWrong {
+  color: var(--m-danger);
+  border-bottom-color: var(--m-danger);
+  background-color: var(--m-danger-soft);
+}
+
+.answerHint {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--m-fs-xs);
+  color: var(--m-danger);
+}
+
+/* 占位（未揭示的句子） */
+.placeholder {
+  display: inline-block;
+  min-width: 60px;
+  padding: 2px 8px;
+  border-bottom: 2px solid var(--m-border-strong);
+  color: transparent;
+  opacity: 0.3;
+  user-select: none;
+}
+
+/* 指导记忆：当前步骤的目标句高亮 */
+.guidedTarget {
+  background-color: var(--m-accent-soft);
+  color: var(--m-accent-text);
+  border-radius: var(--m-r-sm);
+  padding: 1px 4px;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sentence {
+    transition: background-color var(--m-dur-fast) var(--m-ease-std),
+      color var(--m-dur-fast) var(--m-ease-std);
+  }
+
+  .sentence:hover {
+    background-color: var(--m-bg-subtle);
+  }
+}

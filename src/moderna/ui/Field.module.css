@@ -1,0 +1,76 @@
+/* 盒式输入框 —— 刻意打破经典界面的"仅下划线"语言 */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--m-fs-sm);
+  font-weight: 600;
+  color: var(--m-text-secondary);
+}
+
+.field {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: var(--m-fs-md);
+  color: var(--m-text);
+  background-color: var(--m-bg-inset);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-md);
+  outline: none;
+}
+
+.field::placeholder {
+  color: var(--m-text-muted);
+}
+
+.area {
+  resize: vertical;
+  line-height: 1.7;
+  min-height: 72px;
+}
+
+.mono {
+  font-family: var(--m-font-mono);
+  font-size: var(--m-fs-sm);
+}
+
+.invalid {
+  border-color: var(--m-danger);
+}
+
+.hint {
+  font-size: var(--m-fs-xs);
+  color: var(--m-text-muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .field {
+    transition: border-color var(--m-dur-fast) var(--m-ease-std),
+      background-color var(--m-dur-fast) var(--m-ease-std),
+      box-shadow var(--m-dur-fast) var(--m-ease-out);
+  }
+
+  .field:hover:not(:focus) {
+    border-color: var(--m-border-strong);
+  }
+
+  .field:focus {
+    border-color: var(--m-accent);
+    background-color: var(--m-bg-surface);
+    box-shadow: var(--m-ring);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field:focus {
+    border-color: var(--m-accent);
+    box-shadow: var(--m-ring);
+  }
+}

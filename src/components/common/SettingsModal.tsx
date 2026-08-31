@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { useLayoutSettings } from './LayoutContext';
 import { useTheme } from './ThemeProvider';
 import { JsonImportExport } from './JsonImportExport';
+import { useUiMode } from '../../uiMode';
 
 interface SettingsModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, onD
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>('appearance');
   const { sidebarPosition, setSidebarPosition, expandOnHoverExit, setExpandOnHoverExit, hidePreviousSentences, setHidePreviousSentences } = useLayoutSettings();
   const { theme, toggleTheme } = useTheme();
+  const [uiMode, setUiMode] = useUiMode();
 
   return (
     <Modal open={open} title="设置" onClose={onClose} wide>
@@ -130,6 +132,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, onD
                     onClick={() => setHidePreviousSentences(!hidePreviousSentences)}
                   >
                     {hidePreviousSentences ? '隐藏之前的句子' : '显示之前的句子'}
+                  </button>
+                </div>
+              </div>
+
+              <div style={styles.settingRow}>
+                <label style={styles.settingLabel}>实验界面</label>
+                <div style={styles.optionGroup}>
+                  <button
+                    style={{
+                      ...styles.optionBtn,
+                      ...(uiMode === 'classic' ? styles.optionBtnActive : {}),
+                    }}
+                    onClick={() => setUiMode('classic')}
+                  >
+                    经典
+                  </button>
+                  <button
+                    style={{
+                      ...styles.optionBtn,
+                      ...(uiMode === 'modern' ? styles.optionBtnActive : {}),
+                    }}
+                    onClick={() => setUiMode('modern')}
+                  >
+                    Moderna ✨
                   </button>
                 </div>
               </div>

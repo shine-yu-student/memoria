@@ -1,0 +1,128 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-3);
+  margin-bottom: var(--m-s-5);
+}
+
+.search {
+  max-width: 240px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.section {
+  margin-bottom: var(--m-s-8);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-2);
+  margin-bottom: var(--m-s-3);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--m-fs-lg);
+  font-weight: 700;
+}
+
+.sectionCount {
+  font-size: var(--m-fs-sm);
+  color: var(--m-text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--m-s-3);
+}
+
+.slot {
+  position: relative;
+  min-width: 0;
+}
+
+.book {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-s-2);
+  height: 100%;
+  padding: var(--m-s-4);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-lg);
+  background-color: var(--m-bg-surface);
+  box-shadow: var(--m-shadow-1);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.bookTitle {
+  font-size: var(--m-fs-md);
+  font-weight: 600;
+  color: var(--m-text);
+  word-break: break-word;
+}
+
+.bookMeta {
+  margin-top: auto;
+  padding-top: var(--m-s-2);
+  font-size: var(--m-fs-xs);
+  color: var(--m-text-muted);
+}
+
+.slotActions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+}
+
+/* ===== 选择模式 ===== */
+
+.selectBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-3);
+  margin-top: var(--m-s-4);
+  padding: var(--m-s-3) var(--m-s-4);
+  border: 1px solid var(--m-accent-border);
+  border-radius: var(--m-r-lg);
+  background-color: var(--m-accent-soft);
+  box-shadow: var(--m-shadow-2);
+}
+
+.selectCount {
+  font-size: var(--m-fs-md);
+  color: var(--m-accent-text);
+  font-weight: 600;
+}
+
+.selectSpacer {
+  flex: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .slot:hover .slotActions {
+    opacity: 1;
+  }
+
+  .slotActions:focus-within {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slotActions {
+    opacity: 1;
+  }
+}

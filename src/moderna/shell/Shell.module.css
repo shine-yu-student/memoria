@@ -1,0 +1,43 @@
+.shell {
+  display: grid;
+  grid-template-columns: var(--m-rail-w) 1fr;
+  grid-template-rows: var(--m-topbar-h) 1fr;
+  grid-template-areas:
+    "topbar topbar"
+    "rail   main";
+  height: 100vh;
+  background-color: var(--m-bg-canvas);
+  color: var(--m-text);
+}
+
+/*
+ * 顶栏必须是 sticky 而非 fixed：
+ * framer-motion 的投影树在 position:fixed 祖先下会测错，导致 layout 动画跳动。
+ * 弹窗则一律 portal 到 document.body，脱离本子树。
+ */
+.topbar {
+  grid-area: topbar;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-3);
+  padding: 0 var(--m-s-6);
+  background-color: var(--m-bg-surface);
+  border-bottom: 1px solid var(--m-border);
+  box-shadow: var(--m-shadow-1);
+}
+
+.rail {
+  grid-area: rail;
+  overflow: hidden;
+}
+
+.main {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}

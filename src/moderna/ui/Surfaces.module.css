@@ -1,0 +1,158 @@
+/* Card */
+.card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--m-bg-surface);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-lg);
+  box-shadow: var(--m-shadow-1);
+}
+
+.cardPad {
+  padding: var(--m-s-5);
+}
+
+.cardHover {
+  cursor: pointer;
+}
+
+/* Chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: var(--m-fs-sm);
+  border-radius: var(--m-r-pill);
+  background-color: var(--m-bg-subtle);
+  color: var(--m-text-secondary);
+  white-space: nowrap;
+}
+
+.chipAccent {
+  background-color: var(--m-accent-soft);
+  color: var(--m-accent-text);
+}
+
+.chipSuccess {
+  background-color: var(--m-success-soft);
+  color: var(--m-success);
+}
+
+.chipDanger {
+  background-color: var(--m-danger-soft);
+  color: var(--m-danger);
+}
+
+.chipWarning {
+  background-color: var(--m-warning-soft);
+  color: var(--m-warning);
+}
+
+/* EmptyState */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m-s-3);
+  padding: var(--m-s-12) var(--m-s-6);
+  text-align: center;
+  color: var(--m-text-muted);
+}
+
+.emptyIcon {
+  font-size: 40px;
+  opacity: 0.55;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: var(--m-fs-lg);
+  font-weight: 600;
+  color: var(--m-text-secondary);
+}
+
+.emptyDesc {
+  margin: 0;
+  font-size: var(--m-fs-sm);
+  max-width: 380px;
+  line-height: 1.7;
+}
+
+/* ProgressBar */
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  border-radius: var(--m-r-pill);
+  background-color: var(--m-bg-subtle);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--m-r-pill);
+  background-color: var(--m-accent);
+}
+
+/* SearchInput */
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  font-size: 13px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.searchField {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px 8px 30px;
+  font-family: inherit;
+  font-size: var(--m-fs-base);
+  color: var(--m-text);
+  background-color: var(--m-bg-inset);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-md);
+  outline: none;
+}
+
+.searchField::placeholder {
+  color: var(--m-text-muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cardHover {
+    transition: box-shadow var(--m-dur-base) var(--m-ease-std),
+      border-color var(--m-dur-base) var(--m-ease-std);
+  }
+
+  .cardHover:hover {
+    box-shadow: var(--m-shadow-2);
+    border-color: var(--m-border-strong);
+  }
+
+  .searchField {
+    transition: border-color var(--m-dur-fast) var(--m-ease-std),
+      box-shadow var(--m-dur-fast) var(--m-ease-out);
+  }
+
+  .searchField:focus {
+    border-color: var(--m-accent);
+    box-shadow: var(--m-ring);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .searchField:focus {
+    border-color: var(--m-accent);
+    box-shadow: var(--m-ring);
+  }
+}

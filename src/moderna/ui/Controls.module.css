@@ -1,0 +1,87 @@
+/* SegmentedControl */
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--m-r-md);
+  background-color: var(--m-bg-subtle);
+  border: 1px solid var(--m-border);
+}
+
+.segment {
+  position: relative;
+  border: none;
+  background: transparent;
+  border-radius: var(--m-r-sm);
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: var(--m-fs-sm);
+  font-weight: 500;
+  color: var(--m-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segmentActive {
+  color: var(--m-accent-text);
+  font-weight: 600;
+}
+
+/* 由 layoutId 驱动的滑块 */
+.thumb {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--m-r-sm);
+  background-color: var(--m-bg-surface);
+  box-shadow: var(--m-shadow-1);
+  z-index: -1;
+}
+
+/* Switch */
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-3);
+  cursor: pointer;
+}
+
+.switchTrack {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 24px;
+  border-radius: var(--m-r-pill);
+  background-color: var(--m-border-strong);
+}
+
+.switchTrackOn {
+  background-color: var(--m-accent);
+}
+
+.switchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.switchLabel {
+  font-size: var(--m-fs-md);
+  color: var(--m-text);
+}
+
+.switchDesc {
+  font-size: var(--m-fs-xs);
+  color: var(--m-text-muted);
+}
+
+.switchText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

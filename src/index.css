@@ -129,25 +129,35 @@ body {
   transition: background-color 0.2s, color 0.2s;
 }
 
-button {
+/* ===== 以下规则仅对经典界面生效 =====
+   新版界面（moderna）使用 CSS Modules + framer-motion，需避免被这些全局强样式污染：
+   - button 上声明的 transition（尤其 transform）会让 framer 的逐帧内联改写被浏览器二次补间
+   - 输入框下划线式样与 input:focus 的 !important 会强加旧设计语言
+   - 末尾的 * 通配 transition 会让 framer 对颜色的动画被二次补间
+
+   用 :where() 包裹：它贡献 0 特异性，故 :where([data-ui="classic"]) button:hover
+   计算后仍是 (0,1,1)，与改造前逐字节相同，经典界面的层叠关系完全不变。 */
+
+:where([data-ui="classic"]) button {
   font-family: inherit;
   transition: opacity 0.15s, transform 0.1s;
 }
 
-button:hover {
+:where([data-ui="classic"]) button:hover {
   opacity: 0.85;
 }
 
-button:active {
+:where([data-ui="classic"]) button:active {
   transform: scale(0.97);
 }
 
-button:disabled {
+:where([data-ui="classic"]) button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-input, textarea {
+:where([data-ui="classic"]) input,
+:where([data-ui="classic"]) textarea {
   font-family: inherit;
   outline: none;
   background-color: var(--bg-input);
@@ -155,23 +165,28 @@ input, textarea {
   transition: border-color 0.15s, background-color 0.2s, color 0.2s;
 }
 
-input:focus, textarea:focus {
+:where([data-ui="classic"]) input:focus,
+:where([data-ui="classic"]) textarea:focus {
   border-color: var(--border-green) !important;
 }
 
-textarea {
+:where([data-ui="classic"]) textarea {
   line-height: 1.8;
 }
 
 /* 输入框下划线样式 */
-input, textarea, select {
+:where([data-ui="classic"]) input,
+:where([data-ui="classic"]) textarea,
+:where([data-ui="classic"]) select {
   border: none;
   border-bottom: 2px solid var(--border-strong);
   border-radius: 0;
   background-color: transparent;
 }
 
-input:focus, textarea:focus, select:focus {
+:where([data-ui="classic"]) input:focus,
+:where([data-ui="classic"]) textarea:focus,
+:where([data-ui="classic"]) select:focus {
   border-bottom-color: var(--border-green) !important;
 }
 
@@ -198,9 +213,9 @@ input:focus, textarea:focus, select:focus {
   to { transform: rotate(360deg); }
 }
 
-/* ===== 词条卡片交互（词书/句书详情页） ===== */
+/* ===== 词条卡片交互（词书/句书详情页，仅经典界面） ===== */
 /* 悬浮浮起：上移 + 四周淡阴影（内联样式未设置 transform/filter，类样式可生效） */
-.memoria-entry-chip:hover {
+:where([data-ui="classic"]) .memoria-entry-chip:hover {
   transform: translateY(-2px);
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.18));
 }
@@ -217,7 +232,7 @@ input:focus, textarea:focus, select:focus {
   to { opacity: 0; transform: scale(0.92); }
 }
 
-/* 过渡动画 */
-* {
+/* 过渡动画（仅经典界面；必须留在本文件末尾） */
+:where([data-ui="classic"]) * {
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }

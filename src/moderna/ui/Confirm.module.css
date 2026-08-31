@@ -1,0 +1,6 @@
+.body {
+  font-size: var(--m-fs-md);
+  color: var(--m-text-secondary);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}

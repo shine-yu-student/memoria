@@ -1,9 +1,20 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-ui="classic">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Memoria - 记忆助手</title>
+    <script>
+      // 首绘前同步确定界面版本，避免闪现错误界面。
+      // data-ui 已在 html 标签上静态写为 classic，此处只做"修改"，
+      // 因此脚本被拦截或抛错时最坏情况仍是经典界面。
+      (function () {
+        try {
+          var v = localStorage.getItem('memoria:ui');
+          if (v === 'modern') document.documentElement.setAttribute('data-ui', 'modern');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

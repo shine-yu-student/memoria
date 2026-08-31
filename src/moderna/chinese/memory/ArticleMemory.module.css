@@ -1,0 +1,224 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-s-4);
+  height: 100%;
+  min-height: 0;
+  padding: var(--m-s-5) var(--m-s-6);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-3);
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: var(--m-fs-xl);
+  font-weight: 700;
+}
+
+.headerSpacer {
+  flex: 1;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-2);
+}
+
+.scrollArea {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ===== 模式选择 ===== */
+
+.modeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-s-3);
+  max-width: 560px;
+}
+
+.modeCard {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-4);
+  padding: var(--m-s-4) var(--m-s-5);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-lg);
+  background-color: var(--m-bg-surface);
+  box-shadow: var(--m-shadow-1);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+.modeIcon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.modeText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.modeTitle {
+  margin: 0;
+  font-size: var(--m-fs-md);
+  font-weight: 600;
+  color: var(--m-text);
+}
+
+.modeDesc {
+  margin: 0;
+  font-size: var(--m-fs-sm);
+  color: var(--m-text-muted);
+  line-height: 1.6;
+}
+
+.modeArrow {
+  margin-left: auto;
+  color: var(--m-text-muted);
+  flex-shrink: 0;
+}
+
+/* ===== 通用区块 ===== */
+
+.card {
+  padding: var(--m-s-5);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-lg);
+  background-color: var(--m-bg-surface);
+  box-shadow: var(--m-shadow-1);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--m-s-3);
+  font-size: var(--m-fs-md);
+  font-weight: 600;
+}
+
+.hint {
+  margin: 0 0 var(--m-s-3);
+  font-size: var(--m-fs-sm);
+  color: var(--m-text-secondary);
+  line-height: 1.7;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-2);
+  flex-wrap: wrap;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-2);
+  padding: var(--m-s-3) var(--m-s-4);
+  border-radius: var(--m-r-md);
+  font-size: var(--m-fs-md);
+}
+
+.bannerSuccess {
+  background-color: var(--m-success-soft);
+  color: var(--m-success);
+}
+
+.bannerInfo {
+  background-color: var(--m-accent-soft);
+  color: var(--m-accent-text);
+}
+
+.fullTextarea {
+  width: 100%;
+  min-height: 320px;
+  box-sizing: border-box;
+  padding: var(--m-s-4);
+  font-family: inherit;
+  font-size: var(--m-fs-lg);
+  line-height: 2;
+  color: var(--m-text);
+  background-color: var(--m-bg-inset);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-lg);
+  outline: none;
+  resize: vertical;
+}
+
+/* ===== 指导记忆 ===== */
+
+.guidedPrompt {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--m-s-3);
+  font-family: var(--m-font-mono);
+  font-size: var(--m-fs-sm);
+  line-height: 1.7;
+  color: var(--m-text-secondary);
+  background-color: var(--m-bg-inset);
+  border: 1px solid var(--m-border);
+  border-radius: var(--m-r-md);
+  outline: none;
+  resize: vertical;
+  cursor: copy;
+}
+
+.guidedHintBox {
+  padding: var(--m-s-4);
+  border-radius: var(--m-r-lg);
+  background-color: var(--m-accent-soft);
+  border: 1px solid var(--m-accent-border);
+  color: var(--m-accent-text);
+  font-size: var(--m-fs-md);
+  line-height: 1.7;
+}
+
+.stepNav {
+  display: flex;
+  align-items: center;
+  gap: var(--m-s-2);
+  font-size: var(--m-fs-sm);
+  color: var(--m-text-secondary);
+}
+
+.stepInput {
+  width: 56px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .modeCard {
+    transition: box-shadow var(--m-dur-base) var(--m-ease-std),
+      border-color var(--m-dur-base) var(--m-ease-std);
+  }
+
+  .modeCard:hover {
+    box-shadow: var(--m-shadow-2);
+    border-color: var(--m-accent-border);
+  }
+
+  .fullTextarea:focus,
+  .guidedPrompt:focus {
+    border-color: var(--m-accent);
+    box-shadow: var(--m-ring);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fullTextarea:focus,
+  .guidedPrompt:focus {
+    border-color: var(--m-accent);
+    box-shadow: var(--m-ring);
+  }
+}
