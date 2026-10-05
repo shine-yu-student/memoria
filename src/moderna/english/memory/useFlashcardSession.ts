@@ -13,7 +13,7 @@ interface RetestItem {
   dueAfter: number;
 }
 
-/** Fisher-Yates。与经典界面 EnglishMemoryView.tsx:25-32 一致。 */
+/** Fisher-Yates 洗牌。 */
 export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -35,7 +35,7 @@ export function formatTime(seconds: number): string {
  * 【重要】队列与计数器全部用 ref 而非 state：handleSubmit 需要在事件处理器内
  * 同步读取并修改 answeredCount，改成 state 会引入闭包过期的 bug。
  *
- * 必须保留的可观察行为（与经典界面一致）：
+ * 必须保留的可观察行为：
  * - 答错的词在 3–5 张后复现（dueAfter = answeredCount + 3 + floor(random*3)）
  * - progress.done 只计首次答对；重测答对不加 done，故进度条可能停在 100% 以下
  * - wrongEntries 可含重复条目，结果页按 id 分组显示错误次数

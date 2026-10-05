@@ -18,7 +18,7 @@ interface Props {
 /**
  * 指导记忆答题页。
  *
- * 渲染规则逐条对齐经典界面（ArticleMemoryView.tsx:544-635）：
+ * 渲染规则：
  * - idx > lastTargetIdx：恒为禁用占位
  * - idx < firstTargetIdx：仅当 hidePreviousSentences 时为占位，否则正常文本
  * - 区间内且是目标：检查前高亮，检查后输入框 / 批改显示

@@ -28,7 +28,7 @@ const DEFAULT_RATIO = 0.4;
 /**
  * 文章记忆的全部非展示状态。
  *
- * 行为契约严格对齐经典界面 ArticleMemoryView.tsx，尤其是：
+ * 行为契约（改动需谨慎），尤其是：
  * - 批改一律 `(输入).trim() === (正确).trim()` —— 仅 trim，不做标点归一化
  * - 句子的切分与分隔符提取始终基于 article.content，绝不读持久化的 article.sentences
  * - 随机空格数的钳制顺序：先钳 ratio 到 [0.01,1]，再 ceil，最后 max(1, …)
@@ -62,7 +62,7 @@ export function useArticleMemory(article: Article) {
     sentences,
   ]);
 
-  /* ===== 指导记忆持久化（与经典界面同键、同结构、同样无条件写 inputs） ===== */
+  /* ===== 指导记忆持久化（键名与结构不可更改，且无条件写入 inputs） ===== */
 
   useEffect(() => {
     saveGuidedConfig(article.id, guidedConfig);
@@ -134,7 +134,7 @@ export function useArticleMemory(article: Article) {
     return true;
   }, [sentences, blankCount]);
 
-  /** Shift 范围选择：只增不减；点锚点自身则落到切换分支（与经典界面一致） */
+  /** Shift 范围选择：只增不减；点锚点自身则落到切换分支 */
   const handleSentenceClick = useCallback((idx: number, shiftKey: boolean) => {
     setCustomSelected(prev => {
       const next = new Set(prev);

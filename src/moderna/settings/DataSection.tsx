@@ -13,9 +13,8 @@ interface Props {
 /**
  * 数据分区：全量导出 / 导入。
  *
- * 行为与经典界面一致（见 src/components/common/JsonImportExport.tsx）：
- * 同理校验 version 字段，同样按 id 合并，同样的统计文案。
- * 区别仅在于用 Toast 替代 alert（alert 阻塞 rAF，会冻住 framer 动画）。
+ * 校验 version 字段，按 id 合并，并回报统计文案。
+ * 结果用 Toast 呈现而非 alert（alert 阻塞 rAF，会冻住 framer 动画）。
  */
 export const DataSection: React.FC<Props> = ({ onDataChanged }) => {
   const fileRef = useRef<HTMLInputElement>(null);

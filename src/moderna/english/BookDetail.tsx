@@ -32,7 +32,7 @@ interface ParsedEntry {
   chinese: string;
 }
 
-/** 字段别名与经典界面一致：english|en，chinese|zh|meaning */
+/** 导入数据的字段别名：english|en，chinese|zh|meaning */
 function normalizeEntries(raw: unknown): ParsedEntry[] | null {
   const list = Array.isArray(raw)
     ? raw

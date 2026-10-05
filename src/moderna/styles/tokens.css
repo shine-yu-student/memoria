@@ -1,15 +1,13 @@
 /* ==========================================================
-   Moderna 设计令牌
+   设计令牌
    ----------------------------------------------------------
-   全部收口在 html[data-ui="modern"] 之下，物理上不可能影响经典界面。
-   旧令牌（--bg-* / --text-* / --border-*）保持全局不动，供经典界面的
-   内联样式继续使用；新令牌一律用 --m-* 前缀，两套共存于 :root。
+   全部令牌用 --m-* 前缀，收口在 :root 之下，供 CSS Modules 引用。
 
-   深色变体挂到既有的 [data-theme] 属性（ThemeProvider 已写在 <html> 上），
-   因此主题在两套界面间共享。
+   深色变体挂到 [data-theme] 属性（ThemeProvider 已写在 <html> 上），
+   在 :root 默认令牌之后声明，因此深色下后者胜出。
    ========================================================== */
 
-html[data-ui="modern"] {
+:root {
   color-scheme: light;
 
   /* ---- 表面（三层：画布 / 卡片 / 次级；外加内凹层） ---- */
@@ -19,7 +17,7 @@ html[data-ui="modern"] {
   --m-bg-inset: #f2f4f8;
   --m-bg-overlay: rgba(15, 23, 42, 0.42);
 
-  /* ---- 强调色（由经典界面的钢蓝 #5b7a9a 演变而来，保留冷色系识别度） ---- */
+  /* ---- 强调色（冷色系，保持品牌识别度） ---- */
   --m-accent: #4f6bed;
   --m-accent-hover: #3f57d6;
   --m-accent-active: #3649bd;
@@ -54,7 +52,7 @@ html[data-ui="modern"] {
   --m-shadow-4: 0 16px 48px rgba(16, 24, 40, 0.18), 0 4px 12px rgba(16, 24, 40, 0.08);
   --m-ring: 0 0 0 3px rgba(79, 107, 237, 0.28);
 
-  /* ---- 圆角（比经典的 4/6/8/10/12/16/20 阶梯更大更柔） ---- */
+  /* ---- 圆角（较柔和的一套阶梯） ---- */
   --m-r-sm: 6px;
   --m-r-md: 10px;
   --m-r-lg: 14px;
@@ -102,7 +100,7 @@ html[data-ui="modern"] {
   --m-scrollbar-thumb-hover: #9aa3b8;
 }
 
-html[data-ui="modern"][data-theme="dark"] {
+:root[data-theme="dark"] {
   color-scheme: dark;
 
   --m-bg-canvas: #0b0f17;
@@ -143,38 +141,38 @@ html[data-ui="modern"][data-theme="dark"] {
   --m-scrollbar-thumb-hover: #3c4a63;
 }
 
-/* ---------- 仅在 modern 下生效的全局覆盖 ---------- */
+/* ---------- 全局覆盖 ---------- */
 
-html[data-ui="modern"] body {
+body {
   background-color: var(--m-bg-canvas);
   color: var(--m-text);
   line-height: 1.6;
   transition: background-color 220ms var(--m-ease-std), color 220ms var(--m-ease-std);
 }
 
-html[data-ui="modern"] ::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-html[data-ui="modern"] ::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
 }
 
-html[data-ui="modern"] ::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: var(--m-scrollbar-thumb);
   border-radius: var(--m-r-pill);
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
-html[data-ui="modern"] ::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: var(--m-scrollbar-thumb-hover);
 }
 
-/* 现代界面自带焦点环（经典界面保留浏览器默认） */
+/* 统一的键盘焦点环（替换浏览器默认轮廓） */
 @media (prefers-reduced-motion: no-preference) {
-  html[data-ui="modern"] :focus-visible {
+  :focus-visible {
     outline: none;
     box-shadow: var(--m-ring);
     transition: box-shadow 140ms var(--m-ease-out);

@@ -84,15 +84,6 @@
   line-height: 1.7;
 }
 
-.experimentalNote {
-  margin: var(--m-s-5) 0 0;
-  padding: var(--m-s-3) var(--m-s-4);
-  border-radius: var(--m-r-md);
-  background-color: var(--m-warning-soft);
-  color: var(--m-warning);
-  font-size: var(--m-fs-sm);
-  line-height: 1.7;
-}
 
 @media (prefers-reduced-motion: no-preference) {
   .category {

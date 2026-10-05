@@ -10,7 +10,7 @@ interface Props {
   onBackToMenu: () => void;
 }
 
-/** 全篇记忆结果页。复用经典界面同一个 DiffView（src/utils/diff.tsx）。 */
+/** 全篇记忆结果页。差异展示复用 src/utils/diff.tsx 的 DiffView。 */
 export const FullResult: React.FC<Props> = ({ state, onBackToMenu }) => {
   const blank = state.blanks[0];
   const correct = blank?.correctFlag ?? false;

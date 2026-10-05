@@ -19,7 +19,7 @@ interface Props {
  * 必须 portal 到 document.body：framer 的 layout 投影在 fixed 祖先下会测错，
  * 而外壳本身是 fixed 高度的 Grid —— 弹窗留在树内会让内部动画测量失准。
  *
- * 焦点陷阱与 Esc 关闭沿用经典 Modal 的做法（见 src/components/common/Modal.tsx）。
+ * 焦点管理：打开时聚焦弹窗、Tab 循环、Esc 关闭，关闭后焦点归还触发元素。
  */
 export const Modal: React.FC<Props> = ({ open, title, wide, footer, onClose, children }) => {
   const kit = useMotionKit();

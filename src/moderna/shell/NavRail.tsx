@@ -23,8 +23,8 @@ interface Props {
 /**
  * 常驻 72px 图标导轨。
  *
- * 与经典界面的悬浮展开侧栏不同：图标常显，无 hover 展开（那正是经典版
- * 需要 100ms 防抖的原因）。激活指示条用 layoutId 在两个项之间平滑滑动。
+ * 图标常显，无 hover 展开，因此无需防抖。
+ * 激活指示条用 layoutId 在两个项之间平滑滑动。
  */
 export const NavRail: React.FC<Props> = ({ active, onChange }) => (
   <LayoutGroup id="nav-rail">

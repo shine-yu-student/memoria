@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useTheme } from '../../components/common/ThemeProvider';
+import { useTheme } from '../lib/ThemeProvider';
 import { spring } from '../motion/presets';
 import s from './TopBar.module.css';
 
@@ -11,7 +11,7 @@ interface Props {
 /**
  * 顶栏：品牌 + 主题开关 + 设置入口。
  *
- * 复用经典界面的 ThemeProvider —— 主题是跨两套界面共享的用户设置。
+ * 主题由全局 ThemeProvider 提供，持久化在 localStorage['memoria:theme']。
  */
 export const TopBar: React.FC<Props> = ({ onOpenSettings }) => {
   const { theme, toggleTheme } = useTheme();
@@ -21,7 +21,7 @@ export const TopBar: React.FC<Props> = ({ onOpenSettings }) => {
     <div className={s.bar}>
       <div className={s.brand}>
         <span className={s.brandMark}>Memoria</span>
-        <span className={s.brandTag}>Moderna · 实验性界面</span>
+        <span className={s.brandTag}>记忆助手</span>
       </div>
 
       <div className={s.spacer} />

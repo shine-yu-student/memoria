@@ -21,7 +21,7 @@ export const FlashcardSession: React.FC<Props> = ({ entries, onBack }) => {
   const kit = useMotionKit();
 
   // StrictMode 下 effect 会执行两次，用 ref 保证只启动一次，
-  // 否则队列会被洗牌并消费两次（经典界面 EnglishMemoryView.tsx:189-197 同款守卫）
+  // 否则队列会被洗牌并消费两次
   const autoStartedRef = useRef(false);
   useEffect(() => {
     if (autoStartedRef.current) return;

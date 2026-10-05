@@ -1,7 +1,6 @@
 /*
  * 注意：本文件绝不在 button 上声明 transform 的 CSS transition。
- * 经典界面的 `button { transition: opacity .15s, transform .1s }` 已被限定作用域，
- * 但若在 CSS Modules 里重新引入同样的规则，framer 每帧改写的内联 transform
+ * 若在这里声明同样的规则，framer 每帧改写的内联 transform
  * 会被浏览器二次补间，导致 whileTap 反馈发糊、layout 动画抖动。
  * 按下反馈一律交给 framer 的 whileTap。
  */

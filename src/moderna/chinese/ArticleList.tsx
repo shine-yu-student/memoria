@@ -30,7 +30,7 @@ export const ArticleList: React.FC<Props> = ({ dataVersion, onOpenArticle, onDat
 
   const refresh = React.useCallback(() => setArticles(loadArticles()), []);
 
-  // dataVersion 变化时重新加载而非重挂载，与经典界面保持同一契约
+  // dataVersion 变化时重新加载而非重挂载，避免打断进行中的会话
   React.useEffect(() => {
     refresh();
   }, [dataVersion, refresh]);

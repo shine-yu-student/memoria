@@ -3,10 +3,8 @@ import type { GuideConfig, GuideStep } from '../../types';
 /**
  * 校验并清洗指导记忆配置。
  *
- * 【重要】本函数是 ArticleMemoryView.tsx:13-31 的逐字副本。
- * 两套界面共用同一份 localStorage 配置（memoria:guided:{id}:config），
- * 任何行为差异都会导致在一套界面里写入的配置被另一套判为非法而清空。
- * 修改此处必须同步修改经典界面。
+ * 【重要】校验规则与已持久化的配置（memoria:guided:{id}:config）严格对应：
+ * 放宽规则前必须确认历史数据仍能被接受，否则用户进度会被清空。
  *
  * 要求：steps 为数组；每步含字符串 hint 和整数、非负的 sentenceIndices 数组。
  * 任何一项不合法返回 null（调用方应拒绝导入并保留旧数据）—— 注意是整份返回 null，

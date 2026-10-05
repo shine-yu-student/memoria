@@ -4,8 +4,8 @@ import { sanitizeGuideConfig } from './sanitizeGuideConfig';
 /**
  * 指导记忆进度的持久化。
  *
- * 【重要】键名与键结构必须与经典界面 ArticleMemoryView.tsx:46-96 完全一致，
- * 否则用户切换界面时进度会丢失。输入项以 `guided-${句子索引}` 为键 ——
+ * 【重要】键名与键结构是既有用户数据的持久化契约，不可更改，
+ * 否则已有进度会丢失。输入项以 `guided-${句子索引}` 为键 ——
  * 注意不是以步骤为键，因此同一个句子在不同步骤中的作答是共享的。
  */
 
@@ -69,7 +69,7 @@ export function saveGuidedStep(articleId: string, step: number): void {
   }
 }
 
-/** 与经典界面一致：无条件写入，即使还没有配置 */
+/** 无条件写入，即使还没有配置 */
 export function saveGuidedInputs(articleId: string, inputs: Record<string, string>): void {
   try {
     localStorage.setItem(keys(articleId).inputs, JSON.stringify(inputs));

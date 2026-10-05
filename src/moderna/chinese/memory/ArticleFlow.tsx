@@ -10,12 +10,11 @@ interface Props {
 /**
  * 句子 + 分隔符的统一遍历。
  *
- * 契约（与经典界面 ArticleMemoryView.tsx:763-801 一致）：
+ * 契约：
  * 先输出 delimiters[idx]，再输出第 idx 句；循环结束后补 delimiters[末尾]。
  * 这样原文的标点与换行能被原样还原。
  *
- * 外层用 Fragment 而非 span：旧代码用的是 display:inline 的 span，
- * 行为上等价，少一层包裹。
+ * 外层用 Fragment 而非 span：行为上等价，少一层包裹。
  */
 export const ArticleFlow: React.FC<Props> = ({ sentences, delimiters, renderSentence }) => (
   <div className={s.article}>

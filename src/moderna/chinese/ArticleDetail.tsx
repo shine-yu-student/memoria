@@ -21,7 +21,7 @@ const DEBOUNCE_MS = 500;
 /**
  * 文章详情 / 编辑器。
  *
- * 持久化策略与经典界面一致：500ms 防抖落盘，外加卸载前 flush，
+ * 持久化策略：500ms 防抖落盘，外加卸载前 flush，
  * 以及进入记忆前先 flush（否则用户在防抖窗口内点"开始记忆"会丢内容）。
  */
 export const ArticleDetail: React.FC<Props> = ({

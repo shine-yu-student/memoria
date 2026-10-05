@@ -14,8 +14,8 @@ interface Props {
 /**
  * 指导记忆配置页。
  *
- * AI 提示词模板逐字照抄经典界面（ArticleMemoryView.tsx:383-394）——
- * 用户可能已收藏该模板，改动会破坏他们的工作流。
+ * AI 提示词模板是既有的对外契约 —— 用户可能已收藏该模板，
+ * 改动会破坏他们的工作流。
  */
 export const GuidedSetup: React.FC<Props> = ({ article, state }) => {
   const toast = useToast();

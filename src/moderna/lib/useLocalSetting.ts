@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
  * localStorage 支撑的持久化设置。
  *
  * 读取失败 / 值非法时一律回落到 defaultValue，保证最坏情况仍可用。
- * ser/de 默认按字符串处理，与经典界面各设置的存储格式一致。
+ * ser/de 默认按字符串处理，读到的原始字符串直接作为值。
  */
 export function useLocalSetting<T extends string>(
   key: string,

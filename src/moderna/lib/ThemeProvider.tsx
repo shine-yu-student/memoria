@@ -16,6 +16,10 @@ export const useTheme = () => useContext(ThemeContext);
 
 const STORAGE_KEY = 'memoria:theme';
 
+/**
+ * 全局主题 Provider：把 light/dark 写到 <html data-theme>，
+ * 供 styles/tokens.css 的深色令牌选择器使用。
+ */
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
     try {

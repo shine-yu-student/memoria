@@ -9,7 +9,7 @@ interface Props {
   onStart: (start: () => boolean, emptyMessage: string) => void;
 }
 
-/** 模式选择。三张卡片，文案与经典界面一致。 */
+/** 模式选择。三张卡片。 */
 export const MemoryMenu: React.FC<Props> = ({ state, onStart }) => {
   const modes = [
     {

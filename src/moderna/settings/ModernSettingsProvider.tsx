@@ -4,7 +4,7 @@ import { useLocalSetting } from '../lib/useLocalSetting';
 export type MotionPref = 'system' | 'full' | 'reduced';
 
 interface ModernSettings {
-  /** 与经典界面共享同一 key，切换界面后该设置保持 */
+  /** 持久化在 localStorage，刷新与升级后保持 */
   hidePreviousSentences: boolean;
   setHidePreviousSentences: (v: boolean) => void;
   motion: MotionPref;
@@ -16,11 +16,11 @@ const ModernSettingsContext = React.createContext<ModernSettings | null>(null);
 const MOTION_VALUES: MotionPref[] = ['system', 'full', 'reduced'];
 
 /**
- * 现代界面的设置。
+ * 应用设置。
  *
- * hidePreviousSentences 刻意复用经典界面 LayoutContext 的同一个 key
- * （memoria:hidePrevious）—— 它是"我的偏好"，不该因为换了界面就重置。
- * 侧栏位置与退出展开方式在新界面已无意义（常驻导轨，无悬浮展开），故不暴露。
+ * hidePreviousSentences 沿用既有 key（memoria:hidePrevious）——
+ * 它是"我的偏好"，不因版本升级而重置。
+ * 侧栏位置与退出展开方式在当前布局下已无意义（常驻导轨，无悬浮展开），故不暴露。
  */
 export const ModernSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hideRaw, setHideRaw] = useLocalSetting<string>(
